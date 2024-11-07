@@ -1,0 +1,75 @@
+#include <iostream>
+#include <fstream>
+#include <filesystem>
+#include <string>
+#include <sstream>
+#include <vector>
+using namespace std;
+namespace fs = filesystem;
+
+string read_specific_line(const fs::path& file_path, int Anfang, int Ende) {
+    ifstream file(file_path);
+    if (!file.is_open()) {
+        return "Error";
+    }
+    
+    string line;
+    int current_line = 1;
+    vector<vector<vector<double>>> dataArray;
+    double x, y, z;
+    
+
+    while (getline(file, line)) {
+        if (current_line >= Anfang && current_line <= Ende) {
+            cout << line << endl;
+            istringstream iss(line);
+            if (iss >> x >> y >> z){
+               dataArray.push_back({{x, y, z}});
+            }
+            ++ current_line;
+            }else {
+                ++ current_line;
+        }  
+        
+        }
+        
+        
+    file.close();
+    return 0;
+} 
+
+
+void search_and_display_line(const fs::path& folder_path, const std::string& target_filename, int Anfang , int Ende) {
+    for (const auto& entry : fs::recursive_directory_iterator(folder_path)) {
+        if (entry.is_regular_file() && entry.path().filename() == target_filename) {
+            string result = read_specific_line(entry.path(), Anfang ,Ende);
+            cout << "File: " << entry.path() << result << "\n";
+            return;
+        }
+    }
+   cout << "Error: File '" << target_filename << "' not found in the directory.\n";
+}
+
+int main() {
+    string folder_path;
+    string file_name;
+    int Anfang;
+    int Ende;
+
+    cout << "Enter the folder path: ";
+    cin >> folder_path;
+    cout << "Enter the file name: ";
+    cin >> file_name;
+    cout << "Enter the line number(Anfangszeile): ";
+    cin >> Anfang;
+    cout << "Enter the line number(Endeszeile): ";
+    cin >> Ende;
+    
+
+    search_and_display_line(folder_path, file_name, Anfang ,Ende);
+
+
+   
+    
+    return 0;
+}
