@@ -1,0 +1,97 @@
+#include <iostream>
+#include <fstream>
+#include <filesystem>
+#include <string>
+#include <sstream>
+#include <vector>
+using namespace std;
+namespace fs = filesystem;
+
+vector<vector<double>> readVectorsFromFile(const fs::path& file_path) {
+    ifstream file(file_path);
+    if (!file.is_open()) {
+        cerr << "Error: Cannot open file " << file_path << endl;
+        return {};
+    }
+
+    vector<vector<double>> vectors;
+    string line;
+    int current_line = 1;
+    int Anzahl;
+
+    
+    while (getline(file, line)) {
+        if (current_line == 22) {
+            Anzahl = stoi(line);
+            break;
+        }
+        ++current_line;
+    }
+
+  
+    while (getline(file, line) && current_line <= 22 + Anzahl) {
+        size_t start = line.find('(');
+        size_t end = line.find(')');
+        if (start != string::npos && end != string::npos && end > start) {
+            string numbers = line.substr(start + 1, end - start - 1);
+            istringstream iss(numbers);
+            vector<double> vec(3);
+            if (iss >> vec[0] >> vec[1] >> vec[2]) {
+                vectors.push_back(vec);
+            }
+        }
+        ++current_line;
+    }
+
+    file.close();
+    return vectors;
+}
+
+
+void displayVector(const vector<vector<double>>& vectors, int index) {
+    if (index >= 0 && index < vectors.size()) {
+        cout << "Vector at index " << index << ": ";
+        for (double val : vectors[index]) {
+            cout << val << " ";
+        }
+        cout << endl;
+    } else {
+        cerr << "Error: Index out of range.\n";
+    }
+}
+
+void processFileInDirectory(const fs::path& folder_path, const string& target_filename) {
+    for (const auto& entry : fs::recursive_directory_iterator(folder_path)) {
+        if (entry.is_regular_file() && entry.path().filename() == target_filename) {
+            cout << "File found: " << entry.path() << endl;
+            vector<vector<double>> vectors = readVectorsFromFile(entry.path());
+            if (!vectors.empty()) {
+                int index;
+                while (true) {
+                    cout << "Enter vector index to display (negative number to exit): ";
+                    cin >> index;
+                    if (index < 0) break;
+                    displayVector(vectors, index);
+                }
+            } else {
+                cout << "No valid vectors found in the specified range.\n";
+            }
+            return;
+        }
+    }
+    cout << "Error: File '" << target_filename << "' not found in the directory.\n";
+}
+
+int main() {
+    string folder_path;
+    string file_name;
+
+    cout << "Enter the folder path: ";
+    cin >> folder_path;
+    cout << "Enter the file name: ";
+    cin >> file_name;
+
+    processFileInDirectory(folder_path, file_name);
+
+    return 0;
+}
