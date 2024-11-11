@@ -7,69 +7,150 @@
 using namespace std;
 namespace fs = filesystem;
 
-string read_specific_line(const fs::path& file_path, int Anfang, int Ende) {
+vector<vector<double>> readPoints(const fs::path& file_path) {
     ifstream file(file_path);
     if (!file.is_open()) {
-        return "Error";
+        cerr << "Error: Cannot open file " << file_path << endl;
+        return {};
     }
-    
+
+    vector<vector<double>> vectors;
     string line;
     int current_line = 1;
-    vector<vector<vector<double>>> dataArray;
-    double x, y, z;
-    
+    int Anzahl;
+
 
     while (getline(file, line)) {
-        if (current_line >= Anfang && current_line <= Ende) {
-            cout << line << endl;
-            istringstream iss(line);
-            if (iss >> x >> y >> z){
-               dataArray.push_back({{x, y, z}});
-            }
-            ++ current_line;
-            }else {
-                ++ current_line;
-        }  
-        
+        if (current_line == 20) {
+            Anzahl = stoi(line);
+            break;
         }
-        
-        
+        ++current_line;
+    }
+
+
+    while (getline(file, line) && current_line <= 20 + Anzahl) {
+        size_t start = line.find('(');
+        size_t end = line.find(')');
+        if (start != string::npos && end != string::npos && end > start) {
+            string numbers = line.substr(start + 1, end - start - 1);
+            istringstream iss(numbers);
+            vector<double> vec(3);
+            if (iss >> vec[0] >> vec[1] >> vec[2]) {
+                vectors.push_back(vec);
+            }
+        }
+        ++current_line;
+    }
+
     file.close();
-    return 0;
-} 
+    return vectors;
+}
 
 
-void search_and_display_line(const fs::path& folder_path, const std::string& target_filename, int Anfang , int Ende) {
+vector<vector<int>> readFaces(const fs::path& file_path) {
+    ifstream file(file_path);
+    if (!file.is_open()) {
+        cerr << "Error: Cannot open file " << file_path << endl;
+        return {};
+    }
+
+    vector<vector<int>> vectors;
+    string line;
+    int current_line = 1;
+    int Anzahl;
+
+
+    while (getline(file, line)) {
+        if (current_line == 20) {
+            Anzahl = stoi(line);
+            break;
+        }
+        ++current_line;
+    }
+    while (getline(file, line) && current_line <= 20 + Anzahl) {
+        size_t start = line.find('(');
+        size_t end = line.find(')');
+        if (start != string::npos && end != string::npos && end > start) {
+            string numbers = line.substr(start + 1, end - start - 1);
+            istringstream iss(numbers);
+            vector<int> vec(4);
+            if (iss >> vec[0] >> vec[1] >> vec[2] >> vec[3]) {
+                vectors.push_back(vec);
+            }
+        }
+        ++ current_line;
+    }
+
+    file.close();
+    return vectors;
+}
+
+void display4DVectorAndPoints(const vector<vector<int>>& vectors4D,
+                              const vector<vector<double>>& vectors3D, int index) {
+    if (index >= 0 && index < vectors4D.size()) {
+        const auto& vec4D = vectors4D[index];
+        cout << "4D Vector at index " << index << ": ";
+        for (int idx : vec4D) {
+            cout << idx << " ";
+        }
+        cout << endl;
+
+        cout << "Corresponding 3D Points:" << endl;
+        for (int idx : vec4D) {
+            if (idx >= 0 && idx < vectors3D.size()) {
+                cout << "Point " << idx << ": ";
+                for (double val : vectors3D[idx]) {
+                    cout << val << " ";
+                }
+                cout << endl;
+            } else {
+                cerr << "Error: Point index " << idx << " is out of range.\n";
+            }
+        }
+    } else {
+        cerr << "Error: 4D vector index out of range.\n";
+    }
+}
+
+fs::path findFileInDirectory(const fs::path& folder_path, const string& file_name) {
     for (const auto& entry : fs::recursive_directory_iterator(folder_path)) {
-        if (entry.is_regular_file() && entry.path().filename() == target_filename) {
-            string result = read_specific_line(entry.path(), Anfang ,Ende);
-            cout << "File: " << entry.path() << result << "\n";
-            return;
+        if (entry.is_regular_file() && entry.path().filename() == file_name) {
+            return entry.path();
         }
     }
-   cout << "Error: File '" << target_filename << "' not found in the directory.\n";
+    cerr << "Error: File '" << file_name << "' not found in directory '" << folder_path << "'." << endl;
+    return {};
 }
 
 int main() {
-    string folder_path;
-    string file_name;
-    int Anfang;
-    int Ende;
+    string folder_path = "..\\Wuerfel\\constant\\polyMesh";
+    string points_file_name =  "points";
+    string indices_file_name = "faces";
 
-    cout << "Enter the folder path: ";
-    cin >> folder_path;
-    cout << "Enter the file name: ";
-    cin >> file_name;
-    cout << "Enter the line number(Anfangszeile): ";
-    cin >> Anfang;
-    cout << "Enter the line number(Endeszeile): ";
-    cin >> Ende;
-    
+    fs::path points_file_path = findFileInDirectory(folder_path, points_file_name);
+    fs::path indices_file_path = findFileInDirectory(folder_path, indices_file_name);
 
-    search_and_display_line(folder_path, file_name, Anfang ,Ende);
+    if (points_file_path.empty() || indices_file_path.empty()) {
+        cerr << "Error: Could not find one or both files." << endl;
+        return 1;
+    }
 
+    vector<vector<double>> points = readPoints(points_file_path);
+    vector<vector<int>> indices = readFaces(indices_file_path);
 
-   
-    
+    if (points.empty() || indices.empty()) {
+        cerr << "Error: Failed to load data from one or both files.\n";
+        return 1;
+    }
+
+    int index;
+    while (true) {
+        cout << "Enter 4D vector index to display (negative number to exit): ";
+        cin >> index;
+        if (index < 0) break;
+        display4DVectorAndPoints(indices, points, index);
+    }
+
     return 0;
 }
