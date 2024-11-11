@@ -6,8 +6,67 @@
 #include <vector>
 using namespace std;
 namespace fs = filesystem;
+//TO DO: funktion createFaces braucht den Wert AnzahlFaces; die Restlcihen Werte müssen in das Array eingefügt werden
+// Struktur für Face-Daten
+struct Face {
+    int number;                  // das wievielte Face von der ersten Zeile es ist
+    int owner;                   // Zu welcher Zelle das Face gehört
+    int neighbour;               // NachbarZelle des Faces
+    vector<vector<double>> points;// Vektor von Punkten, die das Face definieren
+    bool isEdge;                  // ob das Face einen Nachbar hat
+};
+Face* createFaces(int Anzahl) {
+    Face* faceArray = new Face[Anzahl]; // Array von struct Face
 
-vector<vector<double>> readPoints(const fs::path& file_path) {
+    for (int i = 0; i < Anzahl; ++i) {
+        faceArray[i].number = i;
+    }
+
+    return faceArray;
+}
+
+
+vector<vector<double>> readPoints(const fs::path& file_path) {      // Funktion zum Einlesen der Punkte aus einer Datei
+    ifstream file(file_path);                                       // öffnet die Datei
+    if (!file.is_open()) {
+        cerr << "Error: Cannot open file " << file_path << endl;
+        return {};
+    }
+
+    vector<vector<double>> vectors;
+    string line;
+    int current_line = 1;
+    int Anzahl;                                                     // Anzahl gibt die Anzahl der Zeilen an
+
+    // Lese bis zur Zeile 20, um die Anzahl der Punkte zu finden
+    while (getline(file, line)) {
+        if (current_line == 20) {
+            Anzahl = stoi(line);                                    // Konvertiert die Zeile von string zu int mit stoi
+            break;                                                  // verlässt die Schleife
+        }
+        ++current_line;
+    }
+
+    // Lese die Punkte-Daten von Zeile 21 bis 20 + Anzahl
+    while (getline(file, line) && current_line <= 20 + Anzahl) {
+        size_t start = line.find('(');
+        size_t end = line.find(')');                                // Sucht nach runden Klammern und entfernt sie
+        if (start != string::npos && end != string::npos && end > start) {  // npos bedeutet, dass keine Klammer gefunden wurde
+            string numbers = line.substr(start + 1, end - start - 1);
+            istringstream iss(numbers);                             // "iss" liest die Zahlen aus dem string
+            vector<double> vec(3);                                  // Punkte sind 3-dimensional
+            if (iss >> vec[0] >> vec[1] >> vec[2]) {               // Liest die Werte in den Vektor
+                vectors.push_back(vec);
+            }
+        }
+        ++current_line;
+    }
+    cout << file_path << " eingelesen." << endl;
+    file.close();
+    return vectors;
+}
+
+vector<vector<double>> readCundU(const fs::path& file_path) {      // Funktion liest die C & U Dateien ein, ähnlich wie readPoints
     ifstream file(file_path);
     if (!file.is_open()) {
         cerr << "Error: Cannot open file " << file_path << endl;
@@ -19,17 +78,17 @@ vector<vector<double>> readPoints(const fs::path& file_path) {
     int current_line = 1;
     int Anzahl;
 
-
+    // Finde die Zeile 22, die die Anzahl angibt
     while (getline(file, line)) {
-        if (current_line == 20) {
+        if (current_line == 22) {
             Anzahl = stoi(line);
             break;
         }
         ++current_line;
     }
 
-
-    while (getline(file, line) && current_line <= 20 + Anzahl) {
+    // Lese die Werte von Zeile 23 bis 22 + Anzahl
+    while (getline(file, line) && current_line <= 22 + Anzahl) {
         size_t start = line.find('(');
         size_t end = line.find(')');
         if (start != string::npos && end != string::npos && end > start) {
@@ -42,79 +101,90 @@ vector<vector<double>> readPoints(const fs::path& file_path) {
         }
         ++current_line;
     }
-
+    cout << file_path << " eingelesen." << endl;
     file.close();
     return vectors;
 }
 
 
-vector<vector<int>> readFaces(const fs::path& file_path) {
+
+vector<vector<int>> readFaces(const fs::path& file_path) {         // Funktion zum Einlesen von Faces
     ifstream file(file_path);
     if (!file.is_open()) {
         cerr << "Error: Cannot open file " << file_path << endl;
         return {};
     }
 
-    vector<vector<int>> vectors;
+    vector<vector<int>> vectors;                                  // Array für Faces (4D Vektor)
     string line;
     int current_line = 1;
-    int Anzahl;
+    int AnzahlFaces;
 
-
+    // Lese die Zeile 20, um die Anzahl der Faces zu finden
     while (getline(file, line)) {
         if (current_line == 20) {
-            Anzahl = stoi(line);
+            AnzahlFaces = stoi(line);
             break;
         }
         ++current_line;
     }
-    while (getline(file, line) && current_line <= 20 + Anzahl) {
+
+    // Lese die Faces-Daten von Zeile 21 bis 20 + Anzahl
+    while (getline(file, line) && current_line <= 20 + AnzahlFaces) {
         size_t start = line.find('(');
         size_t end = line.find(')');
         if (start != string::npos && end != string::npos && end > start) {
             string numbers = line.substr(start + 1, end - start - 1);
             istringstream iss(numbers);
-            vector<int> vec(4);
+            vector<int> vec(4);                                    // Faces sind 4-dimensional
             if (iss >> vec[0] >> vec[1] >> vec[2] >> vec[3]) {
                 vectors.push_back(vec);
             }
         }
-        ++ current_line;
+        ++current_line;
     }
-
+    cout << file_path << " eingelesen." << endl;
     file.close();
     return vectors;
 }
 
-void display4DVectorAndPoints(const vector<vector<int>>& vectors4D,
-                              const vector<vector<double>>& vectors3D, int index) {
-    if (index >= 0 && index < vectors4D.size()) {
-        const auto& vec4D = vectors4D[index];
-        cout << "4D Vector at index " << index << ": ";
-        for (int idx : vec4D) {
-            cout << idx << " ";
-        }
-        cout << endl;
-
-        cout << "Corresponding 3D Points:" << endl;
-        for (int idx : vec4D) {
-            if (idx >= 0 && idx < vectors3D.size()) {
-                cout << "Point " << idx << ": ";
-                for (double val : vectors3D[idx]) {
-                    cout << val << " ";
-                }
-                cout << endl;
-            } else {
-                cerr << "Error: Point index " << idx << " is out of range.\n";
-            }
-        }
-    } else {
-        cerr << "Error: 4D vector index out of range.\n";
+vector<int> readOwner(const fs::path& file_path){                  // Funktion zum Einlesen von Owner
+    ifstream file(file_path);
+    if (!file.is_open()) {
+        cerr << "Error: Cannot open file " << file_path << endl;
+        return {};
     }
+
+    vector<int> vectors;                                          // Owner ist 1-dimensional, daher vector<int>
+    string line;
+    int current_line = 1;
+    int Anzahl;
+
+    // Lese die Zeile 21, um die Anzahl der Owner zu finden
+    while (getline(file, line)) {
+        if (current_line == 21) {
+            Anzahl = stoi(line);
+            break;
+        }
+        ++current_line;
+    }
+
+    // Lese die Owner-Daten von Zeile 22 bis 21 + Anzahl
+    while (getline(file, line) && current_line <= 21 + Anzahl) {
+        istringstream iss(line);
+        int value;
+        if (iss >> value) {
+            vectors.push_back(value);
+        }
+        ++current_line;
+    }
+    cout << file_path << " eingelesen." << endl;
+    file.close();
+    return vectors;
 }
 
-fs::path findFileInDirectory(const fs::path& folder_path, const string& file_name) {
-    for (const auto& entry : fs::recursive_directory_iterator(folder_path)) {
+fs::path findFileInDirectory(const fs::path& folder_path, const string& file_name) {  // Funktion zum Suchen einer Datei
+    for (const auto& entry : fs::recursive_directory_iterator(folder_path)) {         // durchsucht rekursiv das Verzeichnis
         if (entry.is_regular_file() && entry.path().filename() == file_name) {
             return entry.path();
         }
@@ -123,33 +193,85 @@ fs::path findFileInDirectory(const fs::path& folder_path, const string& file_nam
     return {};
 }
 
+void displayCell(const vector<vector<int>>& faces,
+                 const vector<int>& owner,
+                 const vector<vector<double>>& points, int ownerID) {
+    vector<int> faceIndices;
+
+    // Suche alle Faces, die zu dem ownerID gehören
+    for (int i = 0; i < owner.size(); ++i) {
+        if (owner[i] == ownerID) {
+            faceIndices.push_back(i);
+        }
+    }
+
+    if (faceIndices.empty()) {
+        cout << "No faces found for owner ID: " << ownerID << endl;
+        return;
+    }
+
+    cout << "Faces for owner ID " << ownerID << ":" << endl;
+    for (int faceIndex : faceIndices) {                         // Zeigt die 6 Faces des Owners an
+        cout << "Face " << faceIndex << ": ";
+        for (int vertexIndex : faces[faceIndex]) {
+            cout << vertexIndex << " ";
+        }
+        cout << endl;
+
+        cout << "Points for Face " << faceIndex << ":" << endl; // Zeigt die 4 Eckpunkte jedes Faces
+        for (int vertexIndex : faces[faceIndex]) {
+            if (vertexIndex >= 0 && vertexIndex < points.size()) {
+                cout << "Point " << vertexIndex << ": ";
+                for (double coord : points[vertexIndex]) {     // Zeigt die Koordinaten der Punkte
+                    cout << coord << " ";
+                }
+                cout << endl;
+            } else {
+                cerr << "Error: Point index " << vertexIndex << " is out of range." << endl;
+            }
+        }
+        cout << endl;
+    }
+}
+
 int main() {
-    string folder_path = "..\\Wuerfel\\constant\\polyMesh";
+    string folder_path_costant = ".\\Wuerfel\\constant\\polyMesh";
     string points_file_name =  "points";
-    string indices_file_name = "faces";
+    string faces_file_name = "faces";
+    string owner_file_name = "owner";
+    string folder_path_CundU = ".\\Wuerfel\\0";
+    string C_file_name = "C";
+    string U_file_name = "U";
 
-    fs::path points_file_path = findFileInDirectory(folder_path, points_file_name);
-    fs::path indices_file_path = findFileInDirectory(folder_path, indices_file_name);
+    fs::path points_file_path = findFileInDirectory(folder_path_costant, points_file_name);
+    fs::path faces_file_path = findFileInDirectory(folder_path_costant, faces_file_name);
+    fs::path owner_file_path = findFileInDirectory(folder_path_costant, owner_file_name);
 
-    if (points_file_path.empty() || indices_file_path.empty()) {
-        cerr << "Error: Could not find one or both files." << endl;
+    if (points_file_path.empty() || faces_file_path.empty() || owner_file_path.empty()) {
+        cerr << "Error: Could not find one or all files." << endl;
         return 1;
     }
 
-    vector<vector<double>> points = readPoints(points_file_path);
-    vector<vector<int>> indices = readFaces(indices_file_path);
+    fs::path C_file_path = findFileInDirectory(folder_path_CundU, C_file_name);
+    fs::path U_file_path = findFileInDirectory(folder_path_CundU, U_file_name);
 
-    if (points.empty() || indices.empty()) {
+    vector<vector<double>> points = readPoints(points_file_path);
+    vector<vector<double>> C = readCundU(C_file_path);
+    vector<vector<double>> U = readCundU(U_file_path);
+    vector<vector<int>> faces = readFaces(faces_file_path);
+    vector<int> owner = readOwner(owner_file_path);
+
+    if (points.empty() || faces.empty()) {
         cerr << "Error: Failed to load data from one or both files.\n";
         return 1;
     }
 
     int index;
     while (true) {
-        cout << "Enter 4D vector index to display (negative number to exit): ";
+        cout << "Enter the number of cell to display (negative number to exit): ";
         cin >> index;
         if (index < 0) break;
-        display4DVectorAndPoints(indices, points, index);
+        displayCell(faces, owner, points, index);
     }
 
     return 0;
