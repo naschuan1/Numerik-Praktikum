@@ -1,0 +1,11 @@
+-Struct Faces, oder Zuordnung von Faces zu Owner+Neighbour
+-Rückgabe von Anzahl Zellen aus Settings oder vom Ausleser der Owner Datei
+-Struct cell
+-dyn. Array mit struct cell
+-Funktion, die C & U in Cells zuweist
+-Funtion die schaut ob Cell eine Rand,oder Eckzelle ist
+-Funktion zur Gradientenberechnung
+-Unterfunktion zur Gradientenberechnung bei Rand-eckpunkten
+--Berechnung Q-Kriterium
+-ParaView Darstellung
+-Pot. Aufteilung des Berechnungsgitters
