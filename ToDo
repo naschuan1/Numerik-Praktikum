@@ -8,4 +8,5 @@
 -Unterfunktion zur Gradientenberechnung bei Rand-eckpunkten
 --Berechnung Q-Kriterium
 -ParaView Darstellung
+-Test mit echten Daten
 -Pot. Aufteilung des Berechnungsgitters
