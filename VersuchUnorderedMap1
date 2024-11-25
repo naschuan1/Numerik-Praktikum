@@ -1,0 +1,361 @@
+#include <iostream>
+#include <fstream>
+#include <filesystem>
+#include <string>
+#include <sstream>
+#include <vector>
+#include <unordered_map>
+using namespace std;
+namespace fs = filesystem;
+
+struct constant {
+    unordered_map<int, vector<double>> points;  // Replacing vector<vector<double>> with unordered_map<int, vector<double>>
+    unordered_map<int, int> owner;             // Replacing vector<int> with unordered_map<int, int>
+    unordered_map<int, int> neighbour;         // Replacing vector<int> with unordered_map<int, int>
+    unordered_map<int, vector<int>> faceMap;   // Unchanged
+
+    void FillFaceMap(const vector<vector<int>>& faces, int AnzahlFaces) {
+        for (int i = 0; i < AnzahlFaces; i++) {
+            faceMap[i] = faces[i];
+        }
+    }
+
+    // Helper function to populate maps from vectors
+    void populateMapsFromVectors(
+            const vector<vector<double>>& pointVec,
+            const vector<int>& ownerVec,
+            const vector<int>& neighbourVec) {
+        for (size_t i = 0; i < pointVec.size(); ++i) {
+            points[i] = pointVec[i];
+        }
+        for (size_t i = 0; i < ownerVec.size(); ++i) {
+            owner[i] = ownerVec[i];
+        }
+        for (size_t i = 0; i < neighbourVec.size(); ++i) {
+            neighbour[i] = neighbourVec[i];
+        }
+    }
+};
+
+struct CU {
+    vector<vector<double>> C;
+    vector<vector<double>> U;
+};
+
+struct Class {
+
+};
+
+fs::path findFileInDirectory(const fs::path& folder_path, const string& file_name) {   //sucht und öffnet die Datei mit Folderpath und Filename
+    for (const auto &entry: fs::recursive_directory_iterator(folder_path)) {     //sucht rekursiv alle Logs
+        if (entry.is_regular_file() && entry.path().filename() == file_name) {
+            return entry.path();
+        }
+    }
+}
+vector<vector<double>> readPoints(const fs::path& file_path) {      //Einlesen von Points
+    ifstream file(file_path);                                       //öffnet die Datei
+    if (!file.is_open()) {
+        cerr << "Error: Cannot open file " << file_path << endl;
+        return {};
+    }
+
+    vector<vector<double>> vectors;
+    string line;
+    int current_line = 1;
+    int Anzahl;                                                 //Anzahl = die Anzahl der Daten
+
+
+    while (getline(file, line)) {
+        if (current_line == 20) {
+            Anzahl = stoi(line);                               //line hat jetzt die Datentyp von string.
+            break;                                             //Mit stoi wird string zu int tranformiert.
+        }
+        ++current_line;
+    }
+
+
+    while (getline(file, line) && current_line <= 20 + Anzahl) {
+        size_t start = line.find('(');
+        size_t end = line.find(')');                               //sucht und löscht die Klamma
+        if (start != string::npos && end != string::npos && end > start) {  //npos = nichts(keine Klamma ist gefunden)
+            string numbers = line.substr(start + 1, end - start - 1);
+            istringstream iss(numbers);                           //"iss" sucht die Zahlen
+            vector<double> vec(3);                                //Points sind 3 dimensional
+            if (iss >> vec[0] >> vec[1] >> vec[2]) {
+                vectors.push_back(vec);
+            }
+        }
+        ++current_line;
+    }
+    cout << file_path << " eingelesen." << endl;
+    file.close();
+    return vectors;
+}
+
+vector<vector<double>> readCundU(const fs::path& file_path) {      //Diese Funktion ist ähnlich wie read pointsw
+    ifstream file(file_path);
+    if (!file.is_open()) {
+        cerr << "Error: Cannot open file " << file_path << endl;
+        return {};
+    }
+
+    vector<vector<double>> vectors;
+    string line;
+    int current_line = 1;
+    int Anzahl;
+
+
+    while (getline(file, line)) {
+        if (current_line == 22) {
+            Anzahl = stoi(line);
+            break;
+        }
+        ++current_line;
+    }
+
+
+    while (getline(file, line) && current_line <= 22 + Anzahl) {
+        size_t start = line.find('(');
+        size_t end = line.find(')');
+        if (start != string::npos && end != string::npos && end > start) {
+            string numbers = line.substr(start + 1, end - start - 1);
+            istringstream iss(numbers);
+            vector<double> vec(3);
+            if (iss >> vec[0] >> vec[1] >> vec[2]) {
+                vectors.push_back(vec);
+            }
+        }
+        ++current_line;
+    }
+    cout << file_path << " eingelesen." << endl;
+    file.close();
+    return vectors;
+}
+
+vector<vector<int>> readFaces(const fs::path& file_path) {         //Einlesen von faces
+    ifstream file(file_path);
+    if (!file.is_open()) {
+        cerr << "Error: Cannot open file " << file_path << endl;
+        return {};
+    }
+
+    vector<vector<int>> vectors;                                  //Ein dynamisches Array
+    string line;
+    int current_line = 1;
+    int Anzahl;
+
+
+    while (getline(file, line)) {
+        if (current_line == 20) {
+            Anzahl = stoi(line);
+            break;
+        }
+        ++current_line;
+    }
+    while (getline(file, line) && current_line <= 20 + Anzahl) {
+        size_t start = line.find('(');
+        size_t end = line.find(')');
+        if (start != string::npos && end != string::npos && end > start) {
+            string numbers = line.substr(start + 1, end - start - 1);
+            istringstream iss(numbers);
+            vector<int> vec(4);                                    //faces sind 4-dimensional
+            if (iss >> vec[0] >> vec[1] >> vec[2] >> vec[3]) {
+                vectors.push_back(vec);
+            }
+        }
+        ++ current_line;
+    }
+    cout << file_path << " eingelesen." << endl;
+    file.close();
+    return vectors;
+}
+
+vector<int> readOwner(const fs::path& file_path){                  //Einlesen von owner
+    ifstream file(file_path);
+    if (!file.is_open()) {
+        cerr << "Error: Cannot open file " << file_path << endl;
+        return {};
+    }
+
+    vector<int> vectors;                                          //Owner ist 1-dimensional, deswegen nur einmal "vector<>"
+    string line;
+    int current_line = 1;
+    int Anzahl;
+
+    while (getline(file, line)) {
+        if (current_line == 21) {
+            Anzahl = stoi(line);
+            break;
+        }
+        ++current_line;
+    }
+
+
+    while (getline(file, line) && current_line <= 21 + Anzahl) {
+        istringstream iss(line);
+        int value;
+        if (iss >> value) {
+            vectors.push_back(value);
+        }
+        ++current_line;
+    }
+    cout << file_path << " eingelesen." << endl;
+    file.close();
+    return vectors;
+}
+
+vector<int> readNeighbour(const fs::path& file_path){                  //Einlesen von neighbour
+    ifstream file(file_path);
+    if (!file.is_open()) {
+        cerr << "Error: Cannot open file " << file_path << endl;
+        return {};
+    }
+
+    vector<int> vectors;                                          //Neighbour ist 1-dimensional, deswegen nur einmal "vector<>"
+    string line;
+    int current_line = 1;
+    int Anzahl;
+
+    while (getline(file, line)) {
+        if (current_line == 21) {
+            Anzahl = stoi(line);
+            break;
+        }
+        ++current_line;
+    }
+
+
+    while (getline(file, line) && current_line <= 21 + Anzahl) {
+        istringstream iss(line);
+        int value;
+        if (iss >> value) {
+            vectors.push_back(value);
+        }
+        ++current_line;
+    }
+    cout << file_path << " eingelesen." << endl;
+    file.close();
+    return vectors;
+}
+void displaySettings(const fs::path& file_path){
+    ifstream file(file_path);
+    if (!file.is_open()) {
+        cerr << "Error: Cannot open file " << file_path << endl;
+        return;
+    }
+
+    string line;
+    int line_number = 1;
+
+    while (getline(file, line)) {
+        cout << line << endl;
+        ++line_number;
+    }
+
+    file.close();
+}
+
+void displayData(const constant& meshData, const CU& fieldData, const string& name, int index) {
+    if (name == "points") {
+        auto it = meshData.points.find(index);
+        if (it != meshData.points.end()) {
+            cout << "points[" << index << "] = (";
+            for (size_t i = 0; i < it->second.size(); ++i) {
+                cout << it->second[i] << (i < it->second.size() - 1 ? ", " : "");
+            }
+            cout << ")" << endl;
+        } else {
+            cout << "Index not found for points." << endl;
+        }
+    } else if (name == "owner") {
+        auto it = meshData.owner.find(index);
+        if (it != meshData.owner.end()) {
+            cout << "owner[" << index << "] = " << it->second << endl;
+        } else {
+            cout << "Index not found for owner." << endl;
+        }
+    } else if (name == "neighbour") {
+        auto it = meshData.neighbour.find(index);
+        if (it != meshData.neighbour.end()) {
+            cout << "neighbour[" << index << "] = " << it->second << endl;
+        } else {
+            cout << "Index not found for neighbour." << endl;
+        }
+    } else if (name == "C") {
+        if (index >= 0 && index < fieldData.C.size()) {
+            cout << "C[" << index << "] = (";
+            for (size_t i = 0; i < fieldData.C[index].size(); ++i) {
+                cout << fieldData.C[index][i] << (i < fieldData.C[index].size() - 1 ? ", " : "");
+            }
+            cout << ")" << endl;
+        } else {
+            cout << "Index out of range for C." << endl;
+        }
+    } else if (name == "U") {
+        if (index >= 0 && index < fieldData.U.size()) {
+            cout << "U[" << index << "] = (";
+            for (size_t i = 0; i < fieldData.U[index].size(); ++i) {
+                cout << fieldData.U[index][i] << (i < fieldData.U[index].size() - 1 ? ", " : "");
+            }
+            cout << ")" << endl;
+        } else {
+            cout << "Index out of range for U." << endl;
+        }
+    } else {
+        cout << "Invalid data name: " << name << endl;
+    }
+}
+
+int main() {
+    string folder_path_costant = ".\\Wuerfel\\constant\\polyMesh";
+    string points_file_name = "points";
+    string faces_file_name = "faces";
+    string owner_file_name = "owner";
+    string neighbour_file_name = "neighbour";
+    string folder_path_CundU = ".\\Wuerfel\\0";
+    string C_file_name = "C";
+    string U_file_name = "U";
+    string settings_file_name = "settings.txt";
+    string folder_path_settings = ".\\Wuerfel";
+
+    fs::path points_file_path = findFileInDirectory(folder_path_costant, points_file_name);
+    fs::path faces_file_path = findFileInDirectory(folder_path_costant, faces_file_name);
+    fs::path owner_file_path = findFileInDirectory(folder_path_costant, owner_file_name);
+    fs::path neighbour_file_path = findFileInDirectory(folder_path_costant, neighbour_file_name);
+    fs::path C_file_path = findFileInDirectory(folder_path_CundU, C_file_name);
+    fs::path U_file_path = findFileInDirectory(folder_path_CundU, U_file_name);
+    fs::path settings_file_path = findFileInDirectory(folder_path_settings, settings_file_name);
+
+    vector<vector<double>> points = readPoints(points_file_path);
+    vector<vector<double>> C = readCundU(C_file_path);
+    vector<vector<double>> U = readCundU(U_file_path);
+    vector<vector<int>> faces = readFaces(faces_file_path);
+    vector<int> owner = readOwner(owner_file_path);
+    vector<int> neighbour = readNeighbour(neighbour_file_path);
+
+    constant meshData;
+    CU fieldData;
+
+    meshData.populateMapsFromVectors(points, owner, neighbour);
+    fieldData.C = C;
+    fieldData.U = U;
+
+    meshData.FillFaceMap(faces, faces.size());
+    displaySettings(settings_file_path);
+
+    while (true) {
+        string name;
+        int index;
+        cout << "Enter data name (points, owner, neighbour, C, U) or 'exit' to quit: ";
+        cin >> name;
+        if (name == "exit") break;
+
+        cout << "Enter index: ";
+        cin >> index;
+
+        displayData(meshData, fieldData, name, index);
+    }
+
+    return 0;
+}
