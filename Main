@@ -4,6 +4,9 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <cmath>
+#include <unordered_map>  // neu
+#include <tuple>          //neu
 using namespace std;
 namespace fs = filesystem;
 
@@ -106,13 +109,13 @@ vector<vector<int>> readFaces(const fs::path& file_path) {         //Einlesen vo
         return {};
     }
 
-    vector<vector<int>> vectors;                                  //Ein dynamisches Array
+    vector<vector<int>> vectors;                                  //Ein dynamisches Array 
     string line;
     int current_line = 1;
     int Anzahl;
 
     
-    while (getline(file, line)) {
+    while (getline(file, line)) {                                
         if (current_line == 20) {
             Anzahl = stoi(line);
             break;
@@ -292,6 +295,43 @@ void displayData(const costant& meshData, const CU& fieldData, const string& nam
     }
 }
 
+
+// Koordinaten konvertieren zu string fuer Hash Table
+string make_key(double x, double y, double z) {
+    return to_string(x) + "," + to_string(y) + "," + to_string(z);
+}
+
+// Berechnung der Gradienten
+vector<double> Abl(const vector<vector<double>> &C, const vector<vector<double>> &U,
+                                    unordered_map<string, int> &point_index, int i, double dx, double dy, double dz) {
+    double x = C[i][0], y = C[i][1], z = C[i][2];   // [i] := Index der Zellemittelpunkten(C); [0,1,2] := Koordinaten x,y,z
+    string key_plus = make_key(x + dx, y + dy, z + dz);
+    string key_minus = make_key(x - dx, y - dy, z - dz);
+
+    vector<double> diff(3, 0.0);         // 3 := Anzahl der Dimension; 0.0 := Anfangswert
+    if (point_index.count(key_plus) && point_index.count(key_minus)) {   // count := Funktion, nachprueft ob "key" existiert
+        // fuer interne Zelle
+        int idx_plus = point_index[key_plus];
+        int idx_minus = point_index[key_minus];
+        for (int j = 0; j < 3; ++j) {
+            diff[j] = (U[idx_plus][j] - U[idx_minus][j])/0.8;
+        }
+    } else if (point_index.count(key_plus)) {
+        // fuer Randzellen(nur Zellekoordinaten +0.4 existieren)
+        int idx_plus = point_index[key_plus];
+        for (int j = 0; j < 3; ++j) {
+            diff[j] = (U[idx_plus][j] - U[i][j])/0.8;
+        }
+    } else if (point_index.count(key_minus)) {
+        // fuer Randzellen(nur Zellekoordinaten -0.4 existieren)
+        int idx_minus = point_index[key_minus];
+        for (int j = 0; j < 3; ++j) {
+            diff[j] = (U[i][j] - U[idx_minus][j])/0.8;
+        }
+    }
+    return diff;
+}
+
 int main() {
     string folder_path_costant = ".\\Wuerfel\\constant\\polyMesh";
     string points_file_name =  "points";
@@ -323,7 +363,7 @@ int main() {
     costant meshData;
     CU fieldData;
 
-    meshData.points = readPoints(points_file_path);
+    meshData.points = readPoints(points_file_path);                  //speichert in struct
     meshData.faces = readFaces(faces_file_path);
     meshData.owner = readOwner(owner_file_path);
     meshData.neighbour = readNeighbour(neighbour_file_path);
@@ -331,9 +371,9 @@ int main() {
     fieldData.C = readCundU(C_file_path);
     fieldData.U = readCundU(U_file_path);
 
-    displaySettings(settings_file_path);
+    //displaySettings(settings_file_path);      
 
-    while (true) {
+    /*while (true) {
         string name;
         int index;
         cout << "Enter data name (points, faces, owner, neighbour, C, U) or 'exit' to quit: ";
@@ -344,9 +384,37 @@ int main() {
         cin >> index;
 
         displayData(meshData, fieldData, name, index);
+    }*/
+    
+    // Buildung von Hash Table
+    unordered_map<string, int> point_index;
+    for (int i = 0; i < C.size(); ++i) {
+        point_index[make_key(C[i][0], C[i][1], C[i][2])] = i;
     }
+
+    // Array fuer die berechneten Gradienten
+    vector<vector<vector<double>>> results;
+
+    for (int i = 0; i < C.size(); ++i) {
+        vector<vector<double>> matrix(3, vector<double>(3, 0.0));
+        matrix[0] = Abl(C, U, point_index, i, 0.4, 0.0, 0.0); // x Richtung
+        matrix[1] = Abl(C, U, point_index, i, 0.0, 0.4, 0.0); // y Richtung
+        matrix[2] = Abl(C, U, point_index, i, 0.0, 0.0, 0.4); // z Richtung
+        results.push_back(matrix);
+    }
+
+    // Ausdruck
+    for (int i = 0; i < results.size(); ++i) {
+        cout << "Zelle " << i << ":" << endl;
+        for (const auto &row : results[i]) {
+            cout << "(" << row[0] << ", " << row[1] << ", " << row[2] << ")" << endl;
+        }
+        cout << endl;
+    }
+   
+    return 0;
+}
+
 
 
     
-    return 0;
-}
