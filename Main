@@ -6,61 +6,14 @@
 #include <vector>
 #include <cmath>
 #include <unordered_map>  
-#include <tuple>          
+#include <tuple>   
 using namespace std;
 namespace fs = filesystem;
-
-struct costant{            //Daten fuer const in vectoren(polymesh); nimmt ie Vektoren aus main
-    vector<vector<double>> points;
-    vector<vector<int>> faces;
-    vector<int> owner;
-    vector<int> neighbour;
-};
 
 struct CU{                 //Daten fuer Zellemittelpunkte und Geschwindigkeiten in vectoren; nimmt Daten aus main
     vector<vector<double>> C;
     vector<vector<double>> U;
 };
-
-vector<vector<double>> readPoints(const fs::path& file_path) {      //Einlesen von Points; nimmt filepath von main, gibt vectors zurueck
-    ifstream file(file_path);                                       //öffnet die Datei
-    if (!file.is_open()) {
-        cerr << "Error: Cannot open file " << file_path << endl;    // cerr := Fehlermeldung
-        return {};
-    }
-
-    vector<vector<double>> vectors;                             //speichert vector fuer Pointskoordinaten
-    string line;
-    int current_line = 1;
-    int Anzahl;                                                 //Anzahl = die Anzahl der Daten 
-
-    
-    while (getline(file, line)) {
-        if (current_line == 20) {                               //20 := Anfangszeile der Daten
-            Anzahl = stoi(line);                               //line hat jetzt die Datentyp von string.
-            break;                                             //Mit stoi wird string zu int tranformiert.
-        }
-        ++current_line;
-    }
-
-  
-    while (getline(file, line) && current_line <= 20 + Anzahl) {
-        size_t start = line.find('(');
-        size_t end = line.find(')');                               //sucht und löscht die Klammar pro Zeile
-        if (start != string::npos && end != string::npos && end > start) {  //npos = nichts(keine Klammar ist gefunden)
-            string numbers = line.substr(start + 1, end - start - 1);
-            istringstream iss(numbers);                           //"iss" sucht die Zahlen
-            vector<double> vec(3);                                //Points sind 3 dimensional
-            if (iss >> vec[0] >> vec[1] >> vec[2]) {
-                vectors.push_back(vec);                           //"push_back" speichert die Daten ins vector
-            }
-        }
-        ++current_line;
-    }
-    cout << file_path << " eingelesen." << endl;
-    file.close();
-    return vectors;                                              //gibt vector von Points zurueck
-}
 
 vector<vector<double>> readCundU(const fs::path& file_path) {      //Einlesen von C oder U, funktioniert fuer beide; nimmt filepath von main, gibt vectors zurueck
     ifstream file(file_path);
@@ -101,113 +54,6 @@ vector<vector<double>> readCundU(const fs::path& file_path) {      //Einlesen vo
     file.close();
     return vectors;                                     //gibt vector C oder U zurueck
 }
-
-vector<vector<int>> readFaces(const fs::path& file_path) {         //Einlesen von faces; nimmt filepath von main, gibt vectors zurueck
-    ifstream file(file_path);
-    if (!file.is_open()) {
-        cerr << "Error: Cannot open file " << file_path << endl;
-        return {};
-    }
-
-    vector<vector<int>> vectors;                                 
-    string line;
-    int current_line = 1;
-    int Anzahl;
-
-    
-    while (getline(file, line)) {                                
-        if (current_line == 20) {
-            Anzahl = stoi(line);
-            break;
-        }
-        ++current_line;
-    }
-    while (getline(file, line) && current_line <= 20 + Anzahl) {
-        size_t start = line.find('(');
-        size_t end = line.find(')');
-        if (start != string::npos && end != string::npos && end > start) {
-            string numbers = line.substr(start + 1, end - start - 1);
-            istringstream iss(numbers);
-            vector<int> vec(4);                                    //vector faces sind 4-dimensional
-            if (iss >> vec[0] >> vec[1] >> vec[2] >> vec[3]) {
-                vectors.push_back(vec);
-            }
-        }
-        ++ current_line;
-    }
-    cout << file_path << " eingelesen." << endl;
-    file.close();
-    return vectors;                              //gibt vector von faces zurueck
-}
-
-vector<int> readOwner(const fs::path& file_path){                  //Einlesen von owner; nimmt filepath von main, gibt vectors zurueck
-    ifstream file(file_path);
-    if (!file.is_open()) {
-        cerr << "Error: Cannot open file " << file_path << endl;
-        return {};
-    }
-
-    vector<int> vectors;                                          //Owner ist 1-dimensional, deswegen nur einmal "vector<>"
-    string line;
-    int current_line = 1;
-    int Anzahl;
-    
-    while (getline(file, line)) {
-        if (current_line == 21) {
-            Anzahl = stoi(line);
-            break;
-        }
-        ++current_line;
-    }
-
-  
-    while (getline(file, line) && current_line <= 21 + Anzahl) {
-        istringstream iss(line);
-        int value;
-        if (iss >> value) {
-            vectors.push_back(value);
-        }
-        ++current_line;
-    }
-    cout << file_path << " eingelesen." << endl;
-    file.close();
-    return vectors;                                //gibt vector von owner zurueck
-}
-
-vector<int> readNeighbour(const fs::path& file_path){                  //Einlesen von neighbour; nimmt filepath von main, gibt vectors zurueck
-    ifstream file(file_path);
-    if (!file.is_open()) {
-        cerr << "Error: Cannot open file " << file_path << endl;
-        return {};
-    }
-
-    vector<int> vectors;                                          //Neighbour ist 1-dimensional, deswegen nur einmal "vector<>"
-    string line;
-    int current_line = 1;
-    int Anzahl;
-    
-    while (getline(file, line)) {
-        if (current_line == 21) {
-            Anzahl = stoi(line);
-            break;
-        }
-        ++current_line;
-    }
-
-  
-    while (getline(file, line) && current_line <= 21 + Anzahl) {
-        istringstream iss(line);
-        int value;
-        if (iss >> value) {
-            vectors.push_back(value);
-        }
-        ++current_line;
-    }
-    cout << file_path << " eingelesen." << endl;
-    file.close();
-    return vectors;                     ////gibt vector von neighbour zurueck
-}
-
 fs::path findFileInDirectory(const fs::path& folder_path, const string& file_name) {   //sucht und öffnet die Datei mit Folderpath und Filename; Rueckswertstyp = filesystem/filepath
     for (const auto& entry : fs::recursive_directory_iterator(folder_path)) {     //sucht rekursiv alle Logs     
         if (entry.is_regular_file() && entry.path().filename() == file_name) {    //nimmt filename und filepath
@@ -217,85 +63,6 @@ fs::path findFileInDirectory(const fs::path& folder_path, const string& file_nam
     cerr << "Error: File '" << file_name << "' not found in directory '" << folder_path << "'." << endl;
     return {};
 }
-
-
-void displaySettings(const fs::path& file_path){  //zeigt den Inhalt von Settings; nimmt filepath von Settings in main
-    ifstream file(file_path);
-    if (!file.is_open()) {
-        cerr << "Error: Cannot open file " << file_path << endl;
-        return;
-    }
-
-    string line;
-    int line_number = 1;
-
-    while (getline(file, line)) {
-        cout << line << endl;
-        ++line_number;
-    }
-
-    file.close();
-}
-
-void displayData(const costant& meshData, const CU& fieldData, const string& name, int index) {  //print die in structs gespeichertnen Daten bzw. const, C und U;
-    if (name == "points") {                                                  // name := Name von vector; meshData:= vector von struct constant; fieldData := vector von struct CU
-        if (index >= 0 && index < meshData.points.size()) {                 // index :=  Nummer von Daten
-            cout << "points[" << index << "] = (";
-            for (size_t i = 0; i < meshData.points[index].size(); ++i) {
-                cout << meshData.points[index][i] << (i < meshData.points[index].size() - 1 ? ", " : ""); //print den Inhalt von vector points abhaengig von index
-            }
-            cout << ")" << endl;
-        } else {
-            cout << "Index out of range for points." << endl;            //Fehlermeldung fuer nicht existierende Indexs
-        }
-    } else if (name == "faces") {                        //print den Inhalt von vector faces abhaengig von index
-        if (index >= 0 && index < meshData.faces.size()) {
-            cout << "faces[" << index << "] = (";
-            for (size_t i = 0; i < meshData.faces[index].size(); ++i) {
-                cout << meshData.faces[index][i] << (i < meshData.faces[index].size() - 1 ? ", " : "");
-            }
-            cout << ")" << endl;
-        } else {
-            cout << "Index out of range for faces." << endl;
-        }
-    } else if (name == "owner") {                        //print den Inhalt von vector owner abhaengig von index
-        if (index >= 0 && index < meshData.owner.size()) {
-            cout << "owner[" << index << "] = " << meshData.owner[index] << endl;
-        } else {
-            cout << "Index out of range for owner." << endl;
-        }
-    } else if (name == "neighbour") {                    //print den Inhalt von vector neighbour abhaengig von index
-        if (index >= 0 && index < meshData.neighbour.size()) {
-            cout << "neighbour[" << index << "] = " << meshData.neighbour[index] << endl;
-        } else {
-            cout << "Index out of range for neighbour." << endl;
-        }
-    } else if (name == "C") {                            //print den Inhalt von vector C abhaengig von index
-        if (index >= 0 && index < fieldData.C.size()) {
-            cout << "C[" << index << "] = (";
-            for (size_t i = 0; i < fieldData.C[index].size(); ++i) {
-                cout << fieldData.C[index][i] << (i < fieldData.C[index].size() - 1 ? ", " : "");
-            }
-            cout << ")" << endl;
-        } else {
-            cout << "Index out of range for C." << endl;
-        }
-    } else if (name == "U") {                            //print den Inhalt von vector U abhaengig von index
-        if (index >= 0 && index < fieldData.U.size()) {
-            cout << "U[" << index << "] = (";
-            for (size_t i = 0; i < fieldData.U[index].size(); ++i) {
-                cout << fieldData.U[index][i] << (i < fieldData.U[index].size() - 1 ? ", " : "");
-            }
-            cout << ")" << endl;
-        } else {
-            cout << "Index out of range for U." << endl;
-        }
-    } else {
-        cout << "Invalid data name: " << name << endl;
-    }
-}
-
-
 //Koordinaten konvertieren zu string fuer Hash Table
 //nimmt vector C, gibt fuer jeden x/y/z Wert ein Schluessel, die Werte werden in einem Feld gespeichert; falls ein Schuessel abgeruft, den zupassenden Wert wird ausgefunden
 string make_key(double x, double y, double z) {        //"x,y,z" = Achse fuer vector C
@@ -330,68 +97,66 @@ vector<double> Abl(const vector<vector<double>> &C, const vector<vector<double>>
     }
     return diff;       //gibt ein vector zurueck
 }
-
-void einschreiben_von_gradienten(const vector<vector<double>>& matrix, const fs::path& file_path){ //schreibt die Gradienten in die Datei grad(U) ein
-    ifstream file(file_path);
-    if (!file.is_open()) {
-        cerr << "Error: Cannot open file " << file_path << endl;
+void einschreiben_von_gradienten(const vector<vector<vector<double>>>& results, const fs::path& file_path){ //schreibt die Gradienten in die Datei grad(U) ein
+    ifstream input_file(file_path);     //oeffnet die Datei grad(U)
+    if (!input_file.is_open()) {
+        cerr << "Error: Cannot open file for reading: " << file_path << endl;
+        return;
     }
-    
+
+    vector<string> file_lines;
+    string line;
+
+    while (getline(input_file, line)) {    //speichert den originalen Inhalt der Datei
+        file_lines.push_back(line);
+    }
+    input_file.close();
+
+    // bildet ein string fuer Gradienten vector
+    vector<string> new_lines;
+    for (const auto& matrix : results) {
+        ostringstream gradient;
+        gradient << "( ";  
+        for (const auto& row : matrix) {
+            for (size_t i = 0; i < row.size(); ++i) {
+                gradient << row[i];
+                if (i < row.size() - 1) gradient << " "; 
+            }
+            gradient << " ";
+        }
+        gradient << ")"; 
+        new_lines.push_back(gradient.str());
+    }
+
+    // fuegt die Gradienten auf Zeile 23 ein
+    file_lines.insert(file_lines.begin() + 23, new_lines.begin(), new_lines.end());
+
+    // schreibt die ganze Datei zurueck
+    ofstream output_file(file_path);
+    if (!output_file.is_open()) {
+        cerr << "Error: Cannot open file for writing: " << file_path << endl;
+        return;
+    }
+
+    for (const auto& file_line : file_lines) {
+        output_file << file_line << "\n";
+    }
+
+    output_file.close();
 }
 
 int main() {
     //folderpath und filename von eingelesenen Dateien
-    string folder_path_costant = ".\\Wuerfel\\constant\\polyMesh";
-    string points_file_name =  "points";
-    string faces_file_name = "faces";
-    string owner_file_name = "owner";
-    string neighbour_file_name = "neighbour";
     string folder_path_CundU = ".\\Wuerfel\\0";
     string C_file_name = "C";
     string U_file_name = "U";
-    string settings_file_name = "settings.txt";
-    string folder_path_settings = ".\\Wuerfel";
-    //fuegt filepath von eingelesenen Dateien mittels folderpath und filename zusammen
-    fs::path points_file_path = findFileInDirectory(folder_path_costant, points_file_name);
-    fs::path faces_file_path = findFileInDirectory(folder_path_costant, faces_file_name);
-    fs::path owner_file_path = findFileInDirectory(folder_path_costant, owner_file_name);
-    fs::path neighbour_file_path = findFileInDirectory(folder_path_costant, neighbour_file_name);
     fs::path C_file_path = findFileInDirectory(folder_path_CundU, C_file_name);
     fs::path U_file_path = findFileInDirectory(folder_path_CundU, U_file_name);
-    fs::path settings_file_path = findFileInDirectory(folder_path_settings, settings_file_name);
 
     //liest und speichert die eingelesenen Daten in vector anhand des filepath ueber die Funktionen ; speichert diese Automatisch in der struct.
     
-    vector<vector<double>> points = readPoints(points_file_path);
     vector<vector<double>> C = readCundU(C_file_path);
     vector<vector<double>> U = readCundU(U_file_path);
-    vector<vector<int>> faces = readFaces(faces_file_path);
-    vector<int> owner = readOwner(owner_file_path);
-    vector<int> neighbour = readNeighbour(neighbour_file_path);
-
-    //die Vorbereitung fuer displayData 
-    costant meshData;
-    CU fieldData;
-    meshData.points = readPoints(points_file_path);                 
-    meshData.faces = readFaces(faces_file_path);
-    meshData.owner = readOwner(owner_file_path);
-    meshData.neighbour = readNeighbour(neighbour_file_path);
-    //definiert structs fuer displayData
-    fieldData.C = readCundU(C_file_path);
-    fieldData.U = readCundU(U_file_path);
-
-    while (true) { //fragt nutze ab welche Datei und welche Zeile durch displayData geprinted werden soll
-        string name;
-        int index;
-        cout << "Enter data name (points, faces, owner, neighbour, C, U, gradients) or 'exit' to quit: ";
-        cin >> name;
-        if (name == "exit") break;
-        
-        cout << "Enter index: ";
-        cin >> index;
-
-        displayData(meshData, fieldData, name, index); //Druckt die angegebene Daten aus
-    }
     
     // Buildung von Hash Table, deklariert map und erstellt keys
     unordered_map<string, int> point_index;
@@ -412,16 +177,15 @@ int main() {
 
     // Ausdruck von results auf Terminal
     for (int i = 0; i < results.size(); ++i) {
-        cout << "Zelle " << i << ":" << endl;
-        for (const auto &row : results[i]) {
-            cout << "(" << row[0] << " " << row[1] << " " << row[2] << ")" << endl;
+        cout << "( ";
+        for (const auto& row : results[i]) {
+            for (double value : row) {
+                cout << value << " ";
+            }
         }
-        cout << endl;
+        cout << ")" << endl; 
     }
-   
+   fs::path output_file_path = ".\\Wuerfel\\0\\grad(U)";
+   einschreiben_von_gradienten(results, output_file_path);
     return 0;
 }
-
-
-
-    
