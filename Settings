@@ -3,8 +3,12 @@ Wuerfel
 
 Dateiname:
 "name of file": main.cpp
+"folder_path_CundU" = .\\Wuerfel\\0
+"C_file_name" = C
+"U_file_name" = U
 
-Dateipfad der Grenzen (boundary), Oberflächen (faces), Nachbarzellen (neighbour), Eigentümerzellen-Labels (owner) und Eckpunte-Vektoren (points):
+
+/*Dateipfad der Grenzen (boundary), Oberflächen (faces), Nachbarzellen (neighbour), Eigentümerzellen-Labels (owner) und Eckpunte-Vektoren (points):
 "folder_path" allgmn.: .\Numerikpraktikum\Wuerfel\constant\polyMesh
 "folder_path" Grenzen, Oberflächen, Nachbarzellen, Eigentümerzellen-Labels und Eckpunkte-Vektoren: .\Numerikpraktikum\Wuerfel\constant\polyMesh
 
@@ -21,6 +25,8 @@ Dateipfad der Zellmittelpunkte (C) und Geschwindigkeitsvektoren (U):
 
 Anzahl der Zellen in C und U:
 "total number of cells in C": 27 
-"total number of cells in U": 27
+"total number of cells in U": 27*/
+
+
 
 
