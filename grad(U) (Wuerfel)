@@ -18,7 +18,7 @@ FoamFile
 
 dimensions      [0 0 -1 0 0 0 0];
 
-internalField   nonuniform List<vector> 
+internalField   nonuniform List<tensor> 
 27
 (
 ( -0.112873 -0.0962237 -0.133771 -0.29828 -0.344634 -0.161951 0.0667012 -0.796464 -0.252089 )
