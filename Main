@@ -145,7 +145,7 @@ void einschreiben_von_gradienten(const vector<vector<vector<double>>>& results, 
     output_file.close();
 }
 
-/*vector<double> Q_Kriterium(const vector<vector<vector<double>>>&results){
+vector<double> Q_Kriterium(const vector<vector<vector<double>>>&results){
     vector<double> Q_Kriterium(results.size(), 0.0);
     for (int i = 0; i < results.size(); i++){
         Q_Kriterium[i] = (pow(results[i][0][0]+results[i][1][1]+results[i][2][2],2.0) - (results[i][0][0]
@@ -154,8 +154,10 @@ void einschreiben_von_gradienten(const vector<vector<vector<double>>>& results, 
         *results[i][0][2]+results[i][2][1]*results[i][1][2]+results[i][2][2]*results[i][2][2])))*0.5;
     }
     return Q_Kriterium;
-}*/
-/*
+}
+/*  BITTE UEBERPRUEFEN !!!
+
+
 unordered_map<string, string> displaySettings(const fs::path& file_path) {
     ifstream file(file_path);
     if (!file.is_open()) {
@@ -185,7 +187,9 @@ int main() {
     fs::path U_file_path = findFileInDirectory(folder_path_CundU, U_file_name);
 
 
-/*
+/*   BITTE UEBERPRUFEN!!!
+
+
 // Laden der Einstellungen
 fs::path settings_file_path = findFileInDirectory(".\\Wuerfel","settings.txt");
 unordered_map<string, string> settings = displaySettings(settings_file_path);
@@ -232,5 +236,6 @@ fs::path U_file_path = findFileInDirectory(folder_path_CundU, U_file_name);*/
     }
    fs::path output_file_path = ".\\Wuerfel\\0\\grad(U)";
    einschreiben_von_gradienten(results, output_file_path);
+   Q_Kriterium(results);
    return 0;
 }
