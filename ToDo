@@ -1,12 +1,13 @@
--Struct Faces, oder Zuordnung von Faces zu Owner+Neighbour
--Rückgabe von Anzahl Zellen aus Settings oder vom Ausleser der Owner Datei
--Struct cell
--dyn. Array mit struct cell
--Funktion, die C & U in Cells zuweist
--Funtion die schaut ob Cell eine Rand,oder Eckzelle ist
--Funktion zur Gradientenberechnung
--Unterfunktion zur Gradientenberechnung bei Rand-eckpunkten
---Berechnung Q-Kriterium
--ParaView Darstellung
--Test mit echten Daten
--Pot. Aufteilung des Berechnungsgitters
+Programm zum laufen bringen
+Folien I
+Q-Kriterium I&SH
+Kein Hardcoding! I
+Zeitabschritte, weg in die Folder N
+Animation St
+Zellabstände selber bestimmen St
+Dev-Mode N
+nicht Physikalische Größen erkennen 
+Finale Präsentation
+
+15.12 Zwischencheck
+19.12. Programm fertig haben 
