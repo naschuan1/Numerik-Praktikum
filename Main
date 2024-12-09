@@ -72,11 +72,11 @@ string make_key(double x, double y, double z) {        //"x,y,z" = Achse fuer ve
 // Berechnung der Gradienten
 vector<double> Abl(const vector<vector<double>> &C, const vector<vector<double>> &U,
                                     unordered_map<string, int> &point_index, int i, double dx, double dy, double dz) {
-    double x = C[i][0], y = C[i][1], z = C[i][2];   // [i] := Index der Zellemittelpunkten(C) (kommt aus main); [0,1,2] := Koordinaten x,y,z
+    double x = C[i][0], y = C[i][1], z = C[i][2]; // [i] := Index der Zellemittelpunkten(C) (kommt aus main); [0,1,2] := Koordinaten x,y,z
     string key_plus = make_key(x + dx, y + dy, z + dz);
     string key_minus = make_key(x - dx, y - dy, z - dz);
 
-    vector<double> diff(3, 0.0);         // 3 := Anzahl der Dimension; 0.0 := Anfangswert; berechnet die Differenzen zwischen zwei U vectors
+    vector<double> diff(3, 0.0);     // 3 := Anzahl der Dimension; 0.0 := Anfangswert; berechnet die Differenzen zwischen zwei U vectors
     if (point_index.count(key_plus) && point_index.count(key_minus)) {   // count := Funktion, nachprueft ob "key" existiert
         // fuer interne Zelle
         int idx_plus = point_index[key_plus];      //idx_plus := C mit dem groesseren Koordinatenwert fuer x/y/z einzel 
@@ -84,12 +84,12 @@ vector<double> Abl(const vector<vector<double>> &C, const vector<vector<double>>
         for (int j = 0; j < 3; ++j) {
             diff[j] = (U[idx_plus][j] - U[idx_minus][j])/0.8;
         }                                       // fuer jede Richtung gibt es zwei Randzellen(Anfangszelle, Endeszelle)
-    } else if (point_index.count(key_plus)) {   // fuer Anfangsrandzellen(nur Zellekoordinaten +0.4 existieren, kein kleinere Koordinaten gibt)
+    } else if (point_index.count(key_plus)) {//fuer Anfangsrandzellen(nur Zellekoordinaten +0.4 existieren, kein kleinere Koordinaten gibt)
         int idx_plus = point_index[key_plus];
         for (int j = 0; j < 3; ++j) {
             diff[j] = (U[idx_plus][j] - U[i][j])/0.8; 
         }
-    } else if (point_index.count(key_minus)) {  // fuer Endesrandzellen(nur Zellekoordinaten -0.4 existieren, kein groessere Koordinaten gibt)
+    } else if (point_index.count(key_minus)) {//fuer Endesrandzellen(nur Zellekoordinaten -0.4 existieren, kein groessere Koordinaten gibt)
         int idx_minus = point_index[key_minus];
         for (int j = 0; j < 3; ++j) {
             diff[j] = (U[i][j] - U[idx_minus][j])/0.8;
@@ -128,7 +128,7 @@ void einschreiben_von_gradienten(const vector<vector<vector<double>>>& results, 
         new_lines.push_back(gradient.str());
     }
 
-    // fuegt die Gradienten auf Zeile 23 ein
+    // fuegt die Gradienten auf Zeile 24 ein
     file_lines.insert(file_lines.begin() + 23, new_lines.begin(), new_lines.end());
 
     // schreibt die ganze Datei zurueck
@@ -145,6 +145,37 @@ void einschreiben_von_gradienten(const vector<vector<vector<double>>>& results, 
     output_file.close();
 }
 
+/*vector<double> Q_Kriterium(const vector<vector<vector<double>>>&results){
+    vector<double> Q_Kriterium(results.size(), 0.0);
+    for (int i = 0; i < results.size(); i++){
+        Q_Kriterium[i] = (pow(results[i][0][0]+results[i][1][1]+results[i][2][2],2.0) - (results[i][0][0]
+        *results[i][0][0]+results[i][0][1]*results[i][1][0]+results[i][0][2]*results[i][2][0]-(results[i][1][0]
+        *results[i][0][1]+results[i][1][1]*results[i][1][1]+results[i][1][2]*results[i][2][1])-(results[i][2][0]
+        *results[i][0][2]+results[i][2][1]*results[i][1][2]+results[i][2][2]*results[i][2][2])))*0.5;
+    }
+    return Q_Kriterium;
+}*/
+/*
+unordered_map<string, string> displaySettings(const fs::path& file_path) {
+    ifstream file(file_path);
+    if (!file.is_open()) {
+        cerr << "Error: Cannot open file " << file_path << endl;
+        return {};
+    }
+
+    unordered_map<string, string> settings;
+    string line;
+    while (getline(file, line)) {
+        size_t pos = line.find('=');
+        if (pos != string::npos) {
+            string key = line.substr(0, pos);
+            string value = line.substr(pos + 1);
+            settings[key] = value;
+        }
+    }
+    file.close();
+    return settings;
+}*/
 int main() {
     //folderpath und filename von eingelesenen Dateien
     string folder_path_CundU = ".\\Wuerfel\\0";
@@ -152,6 +183,20 @@ int main() {
     string U_file_name = "U";
     fs::path C_file_path = findFileInDirectory(folder_path_CundU, C_file_name);
     fs::path U_file_path = findFileInDirectory(folder_path_CundU, U_file_name);
+
+
+/*
+// Laden der Einstellungen
+fs::path settings_file_path = findFileInDirectory(".\\Wuerfel","settings.txt");
+unordered_map<string, string> settings = displaySettings(settings_file_path);
+
+// Pfade und Dateinamen aus der Settings-Datei verwenden
+string folder_path_CundU = settings["folder_path C und U"];
+string C_file_name = settings["C_file_name"];
+string U_file_name = settings["U_file_name"];
+
+fs::path C_file_path = findFileInDirectory(folder_path_CundU, C_file_name);
+fs::path U_file_path = findFileInDirectory(folder_path_CundU, U_file_name);*/
 
     //liest und speichert die eingelesenen Daten in vector anhand des filepath ueber die Funktionen ; speichert diese Automatisch in der struct.
     
@@ -187,5 +232,5 @@ int main() {
     }
    fs::path output_file_path = ".\\Wuerfel\\0\\grad(U)";
    einschreiben_von_gradienten(results, output_file_path);
-    return 0;
+   return 0;
 }
