@@ -54,7 +54,9 @@ vector<vector<double>> readCundU(const fs::path& file_path) {      //Einlesen vo
     file.close();
     return vectors;                                     //gibt vector C oder U zurueck
 }
-fs::path findFileInDirectory(const fs::path& folder_path, const string& file_name) {   //sucht und öffnet die Datei mit Folderpath und Filename; Rueckswertstyp = filesystem/filepath
+
+// Zu loeschen!
+/*fs::path findFileInDirectory(const fs::path& folder_path, const string& file_name) {   //sucht und öffnet die Datei mit Folderpath und Filename; Rueckswertstyp = filesystem/filepath
     for (const auto& entry : fs::recursive_directory_iterator(folder_path)) {     //sucht rekursiv alle Logs     
         if (entry.is_regular_file() && entry.path().filename() == file_name) {    //nimmt filename und filepath
             return entry.path();
@@ -62,7 +64,9 @@ fs::path findFileInDirectory(const fs::path& folder_path, const string& file_nam
     }
     cerr << "Error: File '" << file_name << "' not found in directory '" << folder_path << "'." << endl;
     return {};
-}
+}*/
+//
+
 //Koordinaten konvertieren zu string fuer Hash Table
 //nimmt vector C, gibt fuer jeden x/y/z Wert ein Schluessel, die Werte werden in einem Feld gespeichert; falls ein Schuessel abgeruft, den zupassenden Wert wird ausgefunden
 string make_key(double x, double y, double z) {        //"x,y,z" = Achse fuer vector C
@@ -144,7 +148,41 @@ void einschreiben_von_gradienten(const vector<vector<vector<double>>>& results, 
 
     output_file.close();
 }
+void einschreiben_von_Q(const vector<double>& Q, const fs::path& file_path) { 
+    ifstream input_file(file_path);     
+    if (!input_file.is_open()) {
+        cerr << "Error: Cannot open file for reading: " << file_path << endl;
+        return;
+    }
 
+    vector<string> file_lines;
+    string line;
+
+    while (getline(input_file, line)) {    
+        file_lines.push_back(line);
+    }
+    input_file.close();
+
+    vector<string> new_lines;
+    for (const auto& value : Q) {
+        ostringstream ss;
+        ss << value;
+        new_lines.push_back(ss.str());
+    }
+
+    file_lines.insert(file_lines.begin() + 22, new_lines.begin(), new_lines.end());
+
+    ofstream output_file(file_path);
+    if (!output_file.is_open()) {
+        cerr << "Error: Cannot open file for writing: " << file_path << endl;
+        return;
+    }
+
+    for (const auto& file_line : file_lines) {
+        output_file << file_line << "\n";
+    }
+    output_file.close();
+}
 vector<double> Q_Kriterium(const vector<vector<vector<double>>>&results){
     vector<double> Q_Kriterium(results.size(), 0.0);
     for (int i = 0; i < results.size(); i++){
@@ -155,7 +193,7 @@ vector<double> Q_Kriterium(const vector<vector<vector<double>>>&results){
     }
     return Q_Kriterium;
 }
-/*  BITTE UEBERPRUEFEN !!!
+
 
 
 unordered_map<string, string> displaySettings(const fs::path& file_path) {
@@ -177,8 +215,18 @@ unordered_map<string, string> displaySettings(const fs::path& file_path) {
     }
     file.close();
     return settings;
-}*/
-int main() {
+}
+
+fs::path create_file(const fs::path& source_folder_path, const fs::path& target_folder_path, string file_name){  
+    fs::path source_file = source_folder_path / file_name;
+    fs::path target_file = target_folder_path / file_name;
+        fs::copy_file(source_file, target_file, fs::copy_options::overwrite_existing);//kopiert die leere Datei und speichert in tragetfolder
+        cout << "File copied successfully: " << target_file << endl;
+
+    return target_file;
+}
+
+int main() {/*
     //folderpath und filename von eingelesenen Dateien
     string folder_path_CundU = ".\\Wuerfel\\0";
     string C_file_name = "C";
@@ -187,25 +235,21 @@ int main() {
     fs::path U_file_path = findFileInDirectory(folder_path_CundU, U_file_name);
 
 
-/*   BITTE UEBERPRUFEN!!!
 
-
+*/
 // Laden der Einstellungen
-fs::path settings_file_path = findFileInDirectory(".\\Wuerfel","settings.txt");
+fs::path settings_file_path = ".\\Wuerfel\\settings.txt";
 unordered_map<string, string> settings = displaySettings(settings_file_path);
 
 // Pfade und Dateinamen aus der Settings-Datei verwenden
-string folder_path_CundU = settings["folder_path C und U"];
-string C_file_name = settings["C_file_name"];
-string U_file_name = settings["U_file_name"];
-
-fs::path C_file_path = findFileInDirectory(folder_path_CundU, C_file_name);
-fs::path U_file_path = findFileInDirectory(folder_path_CundU, U_file_name);*/
+string folder_path_CundU = settings["\"folder_path_CundU\""];
+string C_file_name = settings["\"C_file_name\""];
+string U_file_name = settings["\"U_file_name\""];
 
     //liest und speichert die eingelesenen Daten in vector anhand des filepath ueber die Funktionen ; speichert diese Automatisch in der struct.
     
-    vector<vector<double>> C = readCundU(C_file_path);
-    vector<vector<double>> U = readCundU(U_file_path);
+    vector<vector<double>> C = readCundU(C_file_name);
+    vector<vector<double>> U = readCundU(U_file_name);
     
     // Buildung von Hash Table, deklariert map und erstellt keys
     unordered_map<string, int> point_index;
@@ -223,7 +267,7 @@ fs::path U_file_path = findFileInDirectory(folder_path_CundU, U_file_name);*/
         matrix[2] = Abl(C, U, point_index, i, 0.0, 0.0, 0.4); // z Richtung
         results.push_back(matrix); //speichert die Werte von matrix ins results
     }
-
+/*
     // Ausdruck von results auf Terminal
     for (int i = 0; i < results.size(); ++i) {
         cout << "( ";
@@ -233,9 +277,11 @@ fs::path U_file_path = findFileInDirectory(folder_path_CundU, U_file_name);*/
             }
         }
         cout << ")" << endl; 
-    }
-   fs::path output_file_path = ".\\Wuerfel\\0\\grad(U)";
+    }*/
+   fs::path output_file_path = create_file(".\\Wuerfel",folder_path_CundU, "grad(U)");
+   fs::path Q_file_path = create_file(".\\Wuerfel",folder_path_CundU, "Q");
    einschreiben_von_gradienten(results, output_file_path);
-   Q_Kriterium(results);
+   vector<double> Q = Q_Kriterium(results);
+   einschreiben_von_Q(Q, Q_file_path);
    return 0;
 }
