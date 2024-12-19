@@ -194,7 +194,84 @@ vector<double> Q_Kriterium(const vector<vector<vector<double>>>&results){
     return Q_Kriterium;
 }
 
+//NEU:
 
+vector<double> get_time_steps(const fs::path& base_path) {                                 //Hilfsfunktion, um alle Zeitordner aus dem Basisverzeichnis zu lesen und zu sortieren
+    vector<double> time_steps;
+
+    for (const auto& entry : fs::directory_iterator(base_path)) {
+        if (entry.is_directory()) {
+            try {
+                double time = stod(entry.path().filename().string());
+                time_steps.push_back(time);
+            } catch (const invalid_argument&) {
+                continue; // Überspringe Ordner, die keine Zahl im Namen haben
+            }
+        }
+    }
+
+    sort(time_steps.begin(), time_steps.end());
+    return time_steps;
+}
+
+
+void process_simulation_data(const fs::path& base_path) {                                // Hauptfunktion zur Verarbeitung der Zeitordner
+    vector<double> time_steps = get_time_steps(base_path);
+
+    for (double time : time_steps) {
+        ostringstream oss;
+        oss << fixed << setprecision(1) << time;                                         // Formatiere den Zeitwert mit einer Nachkommastelle
+        string folder_name = oss.str();
+
+        fs::path current_folder = base_path / folder_name; // Erstelle Pfad zum Zeitordner
+        cout << "Processing time step folder: " << current_folder << endl;
+
+
+        fs::path C_file = current_folder / "C";          // Datei für "C"                      // Pfade für die relevanten Dateien
+        fs::path U_file = current_folder / "U";          // Datei für "U"
+        fs::path grad_U_file = current_folder / "grad(U)"; // Zieldatei für Gradienten
+        fs::path Q_file = current_folder / "Q";          // Zieldatei für Q-Kriterium
+
+
+        if (!fs::exists(C_file) || !fs::exists(U_file)) {                                         // Prüfe, ob die Eingabedateien existieren
+            cerr << "Error: Missing C or U file in folder " << current_folder << endl;
+            continue;
+        }
+
+                                                                                                    // Schritt 1: Dateien einlesen
+        vector<vector<double>> C = readCundU(C_file.string());                                     // existierende Funktion zum Einlesen            
+        vector<vector<double>> U = readCundU(U_file.string());                                     // existierende Funktion zum Einlesen
+
+                                                                                                    // Schritt 2: Gradienten berechnen
+        vector<vector<vector<double>>> gradients;
+        unordered_map<string, int> point_index;
+
+                                                                                                     // Erstelle eine Hash-Tabelle für Punktindizes (z. B. basierend auf den Koordinaten)
+        for (int i = 0; i < C.size(); ++i) {
+            point_index[make_key(C[i][0], C[i][1], C[i][2])] = i; // Deine Funktion make_key
+        }
+
+                                                                                                    // Berechne die Gradienten für alle Punkte
+        for (int i = 0; i < C.size(); ++i) {
+            vector<vector<double>> matrix(3, vector<double>(3, 0.0));
+            matrix[0] = Abl(C, U, point_index, i, 0.05, 0.0, 0.0); // x-Richtung
+            matrix[1] = Abl(C, U, point_index, i, 0.0, 0.05, 0.0); // y-Richtung
+            matrix[2] = Abl(C, U, point_index, i, 0.0, 0.0, 0.05); // z-Richtung
+            gradients.push_back(matrix);
+        }
+
+                                                                                                    // Schritt 3: Q-Kriterium berechnen
+        vector<double> Q = Q_Kriterium(gradients); // Deine existierende Funktion Q_Kriterium
+
+                                                                                                    // Schritt 4: Ergebnisse speichern
+        einschreiben_von_gradienten(gradients, grad_U_file.string());                               // Gradienten speichern
+        einschreiben_von_Q(Q, Q_file.string());                                                     // Q-Kriterium speichern
+
+        cout << "Processed folder: " << folder_name << endl;
+    }
+}
+
+//BIS HIER.
 
 unordered_map<string, string> displaySettings(const fs::path& file_path) {
     ifstream file(file_path);
@@ -227,7 +304,18 @@ fs::path create_file(const fs::path& source_folder_path, const fs::path& target_
 }
 
 int main() {/*
-    //folderpath und filename von eingelesenen Dateien
+
+// NEU    
+
+fs::path base_path = ".\\Simulation_Umstroemung_eines_Wuerfels";             // Basisverzeichnis der Simulation
+
+    process_simulation_data(base_path);                                         // Verarbeite alle Zeitordner
+
+//BIS HIER
+
+
+
+//folderpath und filename von eingelesenen Dateien
     string folder_path_CundU = ".\\Wuerfel\\0";
     string C_file_name = "C";
     string U_file_name = "U";
