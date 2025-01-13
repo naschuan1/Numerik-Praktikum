@@ -1,23 +1,22 @@
-"name of file"=main.cpp
+"name_of_file"=main.cpp
 "folder_path_CundU"=.\Simulation_Umstroemung_eines_Wuerfels\
-"C_file_name"=.\Simulation_Umstroemung_eines_Wuerfels\
-"U_file_name"=.\Simulation_Umstroemung_eines_Wuerfels\
+"C_file_name"=.\Simulation_Umstroemung_eines_Wuerfels\C
+"U_file_name"=.\Simulation_Umstroemung_eines_Wuerfels\U
 
-Zellabstände:
-"cell_distance"=0.1
+# Zellabstände
+cell_distance=0.1
 
-Übersprungene Zeilen:
-"line_skip"=23
-"line_skip_new"=22
+# Übersprungene Zeilen
+line_skip=23
+line_skip_new=22
 
-Werte für dx, dy, dz :
-
-"double matrix0_dx"=0.05
-"double matrix0_dy"=0.0
-"double matrix0_dz"=0.0
-"double matrix1_dx"=0.0
-"double matrix1_dy"=0.05
-"double matrix1_dz"=0.0
-"double matrix2_dx"=0.0
-"double matrix2_dy"=0.0
-"double matrix2_dz"=0.05
+# Werte für dx, dy, dz
+matrix0_dx=0.05
+matrix0_dy=0.0
+matrix0_dz=0.0
+matrix1_dx=0.0
+matrix1_dy=0.05
+matrix1_dz=0.0
+matrix2_dx=0.0
+matrix2_dy=0.0
+matrix2_dz=0.05
