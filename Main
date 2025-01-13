@@ -1,14 +1,21 @@
 #include <iostream>
-#include <filesystem>
-#include <vector>
-#include <string>
-#include <iomanip>
-#include <unordered_map>
-#include <sstream>
 #include <fstream>
+#include <filesystem>
+#include <string>
+#include <sstream>
+#include <vector>
+#include <cmath>
+#include <unordered_map>
+#include <tuple>
 using namespace std;
-namespace fs = std::filesystem;
-vector<vector<double>> readCundU(const fs::path& file_path) {      //Einlesen von C oder U, funktioniert fuer beide; nimmt filepath von main, gibt vectors zurueck
+namespace fs = filesystem;
+
+struct CU{                 //Daten fuer Zellemittelpunkte und Geschwindigkeiten in vectoren; nimmt Daten aus main
+    vector<vector<double>> C;
+    vector<vector<double>> U;
+};
+
+vector<vector<double>> readCundU(const fs::path& file_path,unordered_map <string,string>settings) {      //Einlesen von C oder U, funktioniert fuer beide; nimmt filepath von main, gibt vectors zurueck
     ifstream file(file_path);
     if (!file.is_open()) {
         cerr << "Error: Cannot open file " << file_path << endl;
@@ -56,33 +63,36 @@ string make_key(double x, double y, double z) {        //"x,y,z" = Achse fuer ve
 
 // Berechnung der Gradienten
 vector<double> Abl(const vector<vector<double>> &C, const vector<vector<double>> &U,
-                                    unordered_map<string, int> &point_index, int i, double dx, double dy, double dz) {
+                   unordered_map<string, int> &point_index, int i, double dx, double dy, double dz, unordered_map<string, string> settings) {
     double x = C[i][0], y = C[i][1], z = C[i][2]; // [i] := Index der Zellemittelpunkten(C) (kommt aus main); [0,1,2] := Koordinaten x,y,z
     string key_plus = make_key(x + dx, y + dy, z + dz);
     string key_minus = make_key(x - dx, y - dy, z - dz);
 
-    vector<double> diff(3, 0.0);     // 3 := Anzahl der Dimension; 0.0 := Anfangswert; berechnet die Differenzen zwischen zwei U vectors
+    vector<double> diff(3, 0.0);  //hier für settings?   // 3 := Anzahl der Dimension; 0.0 := Anfangswert; berechnet die Differenzen zwischen zwei U vectors
     if (point_index.count(key_plus) && point_index.count(key_minus)) {   // count := Funktion, nachprueft ob "key" existiert
         // fuer interne Zelle
-        int idx_plus = point_index[key_plus];      //idx_plus := C mit dem groesseren Koordinatenwert fuer x/y/z einzel 
+        int idx_plus = point_index[key_plus];      //idx_plus := C mit dem groesseren Koordinatenwert fuer x/y/z einzel
         int idx_minus = point_index[key_minus];    //idx_minus := C mit dem kleineren Koordinatenwert fuer x/y/z einzel
+        double cell_distance = stod(settings["cell_distance"]);
         for (int j = 0; j < 3; ++j) {
-            diff[j] = (U[idx_plus][j] - U[idx_minus][j])/0.1;
+            diff[j] = (U[idx_plus][j] - U[idx_minus][j])/cell_distance; //hier für settings
         }                                       // fuer jede Richtung gibt es zwei Randzellen(Anfangszelle, Endeszelle)
     } else if (point_index.count(key_plus)) {//fuer Anfangsrandzellen(nur Zellekoordinaten +0.4 existieren, kein kleinere Koordinaten gibt)
         int idx_plus = point_index[key_plus];
+        double cell_distance = stod(settings["cell_distance"]);
         for (int j = 0; j < 3; ++j) {
-            diff[j] = (U[idx_plus][j] - U[i][j])/0.1; 
+            diff[j] = (U[idx_plus][j] - U[i][j])/cell_distance; //hier für settings
         }
     } else if (point_index.count(key_minus)) {//fuer Endesrandzellen(nur Zellekoordinaten -0.4 existieren, kein groessere Koordinaten gibt)
         int idx_minus = point_index[key_minus];
+        double cell_distance = stod(settings["cell_distance"]);
         for (int j = 0; j < 3; ++j) {
-            diff[j] = (U[i][j] - U[idx_minus][j])/0.1;
+            diff[j] = (U[i][j] - U[idx_minus][j])/cell_distance; //hier für settings
         }
     }
     return diff;       //gibt ein vector zurueck
 }
-void einschreiben_von_gradienten(const vector<vector<vector<double>>>& results, const fs::path& file_path){ //schreibt die Gradienten in die Datei grad(U) ein
+void einschreiben_von_gradienten(const vector<vector<vector<double>>>& results, const fs::path& file_path,unordered_map<string, string> settings){ //schreibt die Gradienten in die Datei grad(U) ein
     ifstream input_file(file_path);     //oeffnet die Datei grad(U)
     if (!input_file.is_open()) {
         cerr << "Error: Cannot open file for reading: " << file_path << endl;
@@ -101,20 +111,21 @@ void einschreiben_von_gradienten(const vector<vector<vector<double>>>& results, 
     vector<string> new_lines;
     for (const auto& matrix : results) {
         ostringstream gradient;
-        gradient << "( ";  
+        gradient << "( ";
         for (const auto& row : matrix) {
             for (size_t i = 0; i < row.size(); ++i) {
                 gradient << row[i];
-                if (i < row.size() - 1) gradient << " "; 
+                if (i < row.size() - 1) gradient << " ";
             }
             gradient << " ";
         }
-        gradient << ")"; 
+        gradient << ")";
         new_lines.push_back(gradient.str());
     }
 
     // fuegt die Gradienten auf Zeile 24 ein
-    file_lines.insert(file_lines.begin() + 23, new_lines.begin(), new_lines.end());
+    int line_skip = 23;
+    file_lines.insert(file_lines.begin() + stod(settings["line_skip"]), new_lines.begin(), new_lines.end()); //hier für settings
 
     // schreibt die ganze Datei zurueck
     ofstream output_file(file_path);
@@ -129,8 +140,8 @@ void einschreiben_von_gradienten(const vector<vector<vector<double>>>& results, 
 
     output_file.close();
 }
-void einschreiben_von_Q(const vector<double>& Q, const fs::path& file_path) { 
-    ifstream input_file(file_path);     
+void einschreiben_von_Q(const vector<double>& Q, const fs::path& file_path, unordered_map<string, string> settings) {
+    ifstream input_file(file_path);
     if (!input_file.is_open()) {
         cerr << "Error: Cannot open file for reading: " << file_path << endl;
         return;
@@ -139,7 +150,7 @@ void einschreiben_von_Q(const vector<double>& Q, const fs::path& file_path) {
     vector<string> file_lines;
     string line;
 
-    while (getline(input_file, line)) {    
+    while (getline(input_file, line)) {
         file_lines.push_back(line);
     }
     input_file.close();
@@ -150,8 +161,7 @@ void einschreiben_von_Q(const vector<double>& Q, const fs::path& file_path) {
         ss << value;
         new_lines.push_back(ss.str());
     }
-
-    file_lines.insert(file_lines.begin() + 22, new_lines.begin(), new_lines.end());
+    file_lines.insert(file_lines.begin() + stod(settings["line_skip_new"]), new_lines.begin(), new_lines.end()); //hier für settings
 
     ofstream output_file(file_path);
     if (!output_file.is_open()) {
@@ -168,12 +178,14 @@ vector<double> Q_Kriterium(const vector<vector<vector<double>>>&results){
     vector<double> Q_Kriterium(results.size(), 0.0);
     for (int i = 0; i < results.size(); i++){
         Q_Kriterium[i] = (pow(results[i][0][0]+results[i][1][1]+results[i][2][2],2.0) - (results[i][0][0]
-        *results[i][0][0]+results[i][0][1]*results[i][1][0]+results[i][0][2]*results[i][2][0]-(results[i][1][0]
-        *results[i][0][1]+results[i][1][1]*results[i][1][1]+results[i][1][2]*results[i][2][1])-(results[i][2][0]
-        *results[i][0][2]+results[i][2][1]*results[i][1][2]+results[i][2][2]*results[i][2][2])))*0.5;
+             *results[i][0][0]+results[i][0][1]*results[i][1][0]+results[i][0][2]*results[i][2][0]-(results[i][1][0]
+             *results[i][0][1]+results[i][1][1]*results[i][1][1]+results[i][1][2]*results[i][2][1])-(results[i][2][0]
+                                                                                                                                                                                                                                                                        *results[i][0][2]+results[i][2][1]*results[i][1][2]+results[i][2][2]*results[i][2][2])))*0.5;
     }
     return Q_Kriterium;
 }
+
+
 
 unordered_map<string, string> displaySettings(const fs::path& file_path) {
     ifstream file(file_path);
@@ -196,7 +208,7 @@ unordered_map<string, string> displaySettings(const fs::path& file_path) {
     return settings;
 }
 
-fs::path create_file(const fs::path& source_folder_path, const fs::path& target_folder_path, string file_name){  
+fs::path create_file(const fs::path& source_folder_path, const fs::path& target_folder_path, string file_name){
     fs::path source_file = source_folder_path / file_name;
     fs::path target_file = target_folder_path / file_name;
     fs::copy_file(source_file, target_file, fs::copy_options::overwrite_existing);//kopiert die leere Datei und speichert in tragetfolder
@@ -205,89 +217,52 @@ fs::path create_file(const fs::path& source_folder_path, const fs::path& target_
     return target_file;
 }
 
-
-// Hilfsfunktion, um alle Zeitordner aus dem Basisverzeichnis zu lesen und zu sortieren
-
-vector<double> get_time_steps(const fs::path& base_path) {
-    vector<double> time_steps;
-
-    for (const auto& entry : fs::directory_iterator(base_path)) {
-        if (entry.is_directory()) {
-            try {
-                double time = stod(entry.path().filename().string());
-                time_steps.push_back(time);
-            } catch (const invalid_argument&) {
-                continue; // Überspringe Ordner, die keine Zahl im Namen haben
-            }
-        }
-    }
-
-    sort(time_steps.begin(), time_steps.end());
-    return time_steps;
-}
-
-// Hauptfunktion zur Verarbeitung der Zeitordner
-
-void process_simulation_data(const fs::path& base_path) {
-    vector<double> time_steps = get_time_steps(base_path);
-
-    for (double time : time_steps) {
-        ostringstream oss;
-        oss << fixed << setprecision(1) << time; // Formatiere den Zeitwert mit einer Nachkommastelle
-        string folder_name = oss.str();
-
-        fs::path current_folder = base_path / folder_name; // Erstelle Pfad zum Zeitordner
-        cout << "Processing time step folder: " << current_folder << endl;
-
-        // Pfade für die relevanten Dateien
-        fs::path C_file = current_folder / "C";          // Datei für "C"
-        fs::path U_file = current_folder / "U";          // Datei für "U"
-        fs::path grad_U_file = current_folder / "grad(U)"; // Zieldatei für Gradienten
-        fs::path Q_file = current_folder / "Q";          // Zieldatei für Q-Kriterium
-
-        // Prüfe, ob die Eingabedateien existieren
-        if (!fs::exists(C_file) || !fs::exists(U_file)) {
-            cerr << "Error: Missing C or U file in folder " << current_folder << endl;
-            continue;
-        }
-
-        // Schritt 1: Dateien einlesen
-        vector<vector<double>> C = readCundU(C_file.string()); // Deine existierende Funktion zum Einlesen
-        vector<vector<double>> U = readCundU(U_file.string()); // Deine existierende Funktion zum Einlesen
-
-        // Schritt 2: Gradienten berechnen
-        vector<vector<vector<double>>> gradients;
-        unordered_map<string, int> point_index;
-
-        // Erstelle eine Hash-Tabelle für Punktindizes (z. B. basierend auf den Koordinaten)
-        for (int i = 0; i < C.size(); ++i) {
-            point_index[make_key(C[i][0], C[i][1], C[i][2])] = i; // Deine Funktion make_key
-        }
-
-        // Berechne die Gradienten für alle Punkte
-        for (int i = 0; i < C.size(); ++i) {
-            vector<vector<double>> matrix(3, vector<double>(3, 0.0));
-            matrix[0] = Abl(C, U, point_index, i, 0.05, 0.0, 0.0); // x-Richtung
-            matrix[1] = Abl(C, U, point_index, i, 0.0, 0.05, 0.0); // y-Richtung
-            matrix[2] = Abl(C, U, point_index, i, 0.0, 0.0, 0.05); // z-Richtung
-            gradients.push_back(matrix);
-        }
-
-        // Schritt 3: Q-Kriterium berechnen
-        vector<double> Q = Q_Kriterium(gradients); // Deine existierende Funktion Q_Kriterium
-
-        // Schritt 4: Ergebnisse speichern
-        einschreiben_von_gradienten(gradients, grad_U_file.string()); // Gradienten speichern
-        einschreiben_von_Q(Q, Q_file.string());                       // Q-Kriterium speichern
-
-        cout << "Processed folder: " << folder_name << endl;
-    }
-}
-
 int main() {
-    fs::path base_path = ".\\Simulation_Umstroemung_eines_Wuerfels"; // Basisverzeichnis der Simulation
 
-    process_simulation_data(base_path); // Verarbeite alle Zeitordner
+    fs::path settings_file_path = ".\\Simulation_Umstroemung_eines_Wuerfels\\settings1.txt";
+    unordered_map<string, string> settings = displaySettings(settings_file_path);
+    for (double i = 0.2; i <= 0.2 ; i = i +0.2){
+        // Pfade und Dateinamen aus der Settings-Datei verwenden
+    string folder_CundU = settings["\"folder_path_CundU\""];
+    string c = "\\C";
+    string u = "\\U";
+    
+    ostringstream oss_cundu;
+    oss_cundu << folder_CundU << i ;
+    string folder_path_CundU = oss_cundu.str();
+    ostringstream oss_c;
+    oss_c << folder_CundU << i << c;
+    string C_file_name = oss_c.str();
+    ostringstream oss_u;
+    oss_u << folder_CundU << i << u;
+    string U_file_name = oss_u.str();
+
+    //liest und speichert die eingelesenen Daten in vector anhand des filepath ueber die Funktionen ; speichert diese Automatisch in der struct.
+    
+    vector<vector<double>> C = readCundU(C_file_name,settings);
+    vector<vector<double>> U = readCundU(U_file_name,settings);
+    
+    // Buildung von Hash Table, deklariert map und erstellt keys
+    unordered_map<string, int> point_index;
+    for (int i = 0; i < C.size(); ++i) {
+        point_index[make_key(C[i][0], C[i][1], C[i][2])] = i;
+    }
+
+    // vector fuer die berechneten Gradienten
+    vector<vector<vector<double>>> results;
+
+    for (int i = 0; i < C.size(); ++i) { // matrix nimmt die Daten von Funktion Abl; matrix := Jacobbi-Matrix; matrix
+        vector<vector<double>> matrix(3, vector<double>(3, 0.0));//jede Zeile von matrix verpackt die partiellen Ableitungen
+        matrix[0] = Abl(C, U, point_index, i, stod(settings["matrix0_dx"]), stod(settings["matrix0_dy"]),stod(settings["matrix0_dz"]),settings); // x Richtung
+        matrix[1] = Abl(C, U, point_index, i, stod(settings["matrix1_dx"]), stod(settings["matrix1_dy"]),stod(settings["matrix1_dz"]),settings); // y Richtung
+        matrix[2] = Abl(C, U, point_index, i, stod(settings["matrix2_dx"]), stod(settings["matrix2_dy"]), stod(settings["matrix2_dz"]),settings); // z Richtung
+        results.push_back(matrix); //speichert die Werte von matrix ins results
+    }
+    fs::path output_file_path = create_file(".\\Simulation_Umstroemung_eines_Wuerfels",folder_path_CundU, "grad(U)");
+    fs::path Q_file_path = create_file(".\\Simulation_Umstroemung_eines_Wuerfels",folder_path_CundU, "Q");
+    einschreiben_von_gradienten(results, output_file_path,settings);
+    vector<double> Q = Q_Kriterium(results); // kommt auch in die settings-Datei
+    einschreiben_von_Q(Q, Q_file_path,settings); //alle funktionen kommen in settings-Datei
+    }
     return 0;
 }
-
