@@ -26,10 +26,10 @@ vector<vector<double>> readCundU(const fs::path& file_path,unordered_map <string
     string line;
     int current_line = 1;
     int Anzahl;
-
+    int line_skip = stod(settings["line_skip_new"]);
     
     while (getline(file, line)) {
-        if (current_line == 22) {                                 //ueberspringt 22 Zeile fuer C und U
+        if (current_line == line_skip) {                                 //ueberspringt 22 Zeile fuer C und U
             Anzahl = stoi(line);
             break;
         }
@@ -37,7 +37,7 @@ vector<vector<double>> readCundU(const fs::path& file_path,unordered_map <string
     }
 
   
-    while (getline(file, line) && current_line <= 22 + Anzahl) {
+    while (getline(file, line) && current_line <= line_skip + Anzahl) {
         size_t start = line.find('(');
         size_t end = line.find(')');
         if (start != string::npos && end != string::npos && end > start) {
