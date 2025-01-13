@@ -1,36 +1,23 @@
-Wuerfel
+"name of file"=main.cpp
+"folder_path_CundU"=.\Simulation_Umstroemung_eines_Wuerfels\
+"C_file_name"=.\Simulation_Umstroemung_eines_Wuerfels\
+"U_file_name"=.\Simulation_Umstroemung_eines_Wuerfels\
 
-// BITTE UEBERPRUEFEN !!!
+Zellabstände:
+"cell_distance"=0.1
 
+Übersprungene Zeilen:
+"line_skip"=23
+"line_skip_new"=22
 
-Dateiname:
-"name of file": main.cpp
-"folder_path_CundU"=.\Wuerfel\0
-"C_file_name"=.\Wuerfel\0\C
-"U_file_name"=.\Wuerfel\0\U
+Werte für dx, dy, dz :
 
-
-//
-
-/*Dateipfad der Grenzen (boundary), Oberflächen (faces), Nachbarzellen (neighbour), Eigentümerzellen-Labels (owner) und Eckpunte-Vektoren (points):
-"folder_path" allgmn.: .\Numerikpraktikum\Wuerfel\constant\polyMesh
-"folder_path" Grenzen, Oberflächen, Nachbarzellen, Eigentümerzellen-Labels und Eckpunkte-Vektoren: .\Numerikpraktikum\Wuerfel\constant\polyMesh
-
-jeweilige Startzeile:
-"line_start boundary": 19
-"line_start faces": 20
-"line_start neighbour": 21
-"line_start owner": 21
-"line_start points": 20
-
-Dateipfad der Zellmittelpunkte (C) und Geschwindigkeitsvektoren (U):
-"folder_path" allgmn.: .\Numerikpraktikum\Wuerfel
-"folder_path" C und U: .\Numerikpraktikum\Wuerfel\0
-
-Anzahl der Zellen in C und U:
-"total number of cells in C": 27 
-"total number of cells in U": 27*/
-
-
-
-
+"double matrix0_dx"=0.05
+"double matrix0_dy"=0.0
+"double matrix0_dz"=0.0
+"double matrix1_dx"=0.0
+"double matrix1_dy"=0.05
+"double matrix1_dz"=0.0
+"double matrix2_dx"=0.0
+"double matrix2_dy"=0.0
+"double matrix2_dz"=0.05
