@@ -27,7 +27,7 @@ vector<vector<double>> readCundU(const fs::path& file_path) {      //Einlesen vo
     int current_line = 1;
     int Anzahl;
 
-    
+
     while (getline(file, line)) {
         if (current_line == 22) {                                 //ueberspringt 22 Zeile fuer C und U
             Anzahl = stoi(line);
@@ -226,6 +226,68 @@ fs::path create_file(const fs::path& source_folder_path, const fs::path& target_
     return target_file;
 }
 
+//Zeitabschnitte 
+
+vector<double> get_time_steps(const fs::path& base_path) {                                                    //Zeitordner lesen und sortieren
+    vector<double> time_steps;
+
+    for (const auto& entry : fs::directory_iterator(base_path)) {
+        if (entry.is_directory()) {
+            try {
+                double time = stod(entry.path().filename().string());
+                time_steps.push_back(time);
+            } catch (const invalid_argument&) {
+                continue; // Überspringe Ordner, die keine Zahl im Namen haben
+            }
+        }
+    }
+
+    sort(time_steps.begin(), time_steps.end());
+    return time_steps;
+}
+
+void process_simulation_data(const fs::path& base_path) {                                                    //Verarbeitung der Zeitordner
+    vector<double> time_steps = get_time_steps(base_path);
+
+    for (double time : time_steps) {
+        ostringstream oss;
+        oss << fixed << setprecision(1) << time; // Formatiere den Zeitwert mit einer Nachkommastelle
+        string folder_name = oss.str();
+
+        fs::path current_folder = base_path / folder_name; // Erstelle Pfad zum Zeitordner
+        cout << "Processing time step folder: " << current_folder << endl;
+
+        // Pfade für die relevanten Dateien
+        fs::path C_file = current_folder / "C";          // Datei für "C"
+        fs::path U_file = current_folder / "U";          // Datei für "U"
+        fs::path grad_U_file = current_folder / "grad(U)"; // Zieldatei für Gradienten
+        fs::path Q_file = current_folder / "Q";          // Zieldatei für Q-Kriterium
+
+        
+        if (!fs::exists(C_file) || !fs::exists(U_file)) {
+            cerr << "Error: Missing C or U file in folder " << current_folder << endl;
+            continue;
+        }
+
+        
+        vector<vector<double>> C = readCundU(C_file.string()); 
+        vector<vector<double>> U = readCundU(U_file.string()); 
+
+        
+        vector<double> Abl;
+        
+        vector<double> Q_Kriterium; 
+
+        
+        einschreiben_von_gradienten(gradients, grad_U_file.string()); // Gradienten speichern
+        einschreiben_von_Q(Q, Q_file.string());                       // Q-Kriterium speichern
+
+        cout << "Processed folder: " << folder_name << endl;
+    }
+}
+
+
+
 int main() {/*
     //folderpath und filename von eingelesenen Dateien
     string folder_path_CundU = ".\\Wuerfel\\0";
@@ -250,7 +312,15 @@ string U_file_name = settings["\"U_file_name\""];
     
     vector<vector<double>> C = readCundU(C_file_name);
     vector<vector<double>> U = readCundU(U_file_name);
-    
+
+/*fs::path base_path = ".\\simulation";             //gehört zu der Funktion der Zeitabschnitte
+
+    process_simulation_data(base_path); 
+     */
+
+
+
+
     // Buildung von Hash Table, deklariert map und erstellt keys
     unordered_map<string, int> point_index;
     for (int i = 0; i < C.size(); ++i) {
