@@ -18,18 +18,23 @@ FoamFile
 
 dimensions      [0 0 -1 0 0 0 0];
 
-internalField   nonuniform List<vector> 
-27
+internalField   uniform (0 0 0 0 0 0 0 0 0)
+148000
 (
 )
 ;
+
 boundaryField
 {
-    lowerWall
+    cube
     {
         type            zeroGradient;
     }
-    upperWall
+    topAndBottom
+    {
+        type            zeroGradient;
+    }
+    sides
     {
         type            zeroGradient;
     }
@@ -38,14 +43,6 @@ boundaryField
         type            zeroGradient;
     }
     outlet
-    {
-        type            zeroGradient;
-    }
-    front
-    {
-        type            zeroGradient;
-    }
-    back
     {
         type            zeroGradient;
     }
