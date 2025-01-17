@@ -219,7 +219,7 @@ fs::path create_file(const fs::path& source_folder_path, const fs::path& target_
 
 int main() {
 
-    fs::path settings_file_path = ".\\Simulation_Umstroemung_eines_Wuerfels\\settings1.txt";
+    fs::path settings_file_path = ".\\Simulation_Umstroemung_eines_Wuerfels\\settings.txt";
     unordered_map<string, string> settings = displaySettings(settings_file_path);
     for (double i = 0.2; i <= 0.2 ; i = i +0.2){
         // Pfade und Dateinamen aus der Settings-Datei verwenden
