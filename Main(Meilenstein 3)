@@ -188,6 +188,7 @@ vector<double> Q_Kriterium(const vector<vector<vector<double>>>&results){
 
 
 unordered_map<string, string> displaySettings(const fs::path& file_path) {
+    
     ifstream file(file_path);
     if (!file.is_open()) {
         cerr << "Error: Cannot open file " << file_path << endl;
@@ -217,24 +218,64 @@ fs::path create_file(const fs::path& source_folder_path, const fs::path& target_
     return target_file;
 }
 
-int main() {
+// Funktion zur Ausgabe der Zellinformationen im Developer-Modus
+void developer_mode(const vector<vector<double>>& C, const vector<vector<vector<double>>>& gradients, const vector<double>& Q, double time_step, int max_cell) {
+    cout << "--- Developer Mode Output (Zeitabschnitt: " << time_step << ") ---" << endl;
+    int cell_count = min(max_cell, static_cast<int>(C.size())); // Begrenzt die Ausgabe auf max_cell
+    for (int i = 0; i < cell_count; ++i) {
+        cout << "Zelle " << i + 1 << ":" << endl;
+        cout << "  Mittelpunkt: (" << C[i][0] << ", " << C[i][1] << ", " << C[i][2] << ")" << endl;
 
-    fs::path settings_file_path = ".\\Simulation_Umstroemung_eines_Wuerfels\\settings.txt";
+        cout << "  Gradient:" << endl;
+        for (size_t row = 0; row < gradients[i].size(); ++row) {
+            cout << "    [";
+            for (size_t col = 0; col < gradients[i][row].size(); ++col) {
+                cout << gradients[i][row][col];
+                if (col < gradients[i][row].size() - 1) cout << ", ";
+            }
+            cout << "]" << endl;
+        }
+
+        cout << "  Q-Kriterium: " << Q[i] << endl;
+        cout << endl;
+    }
+    cout << "--- Ende Developer Mode Output ---" << endl;
+}
+
+
+
+
+int main() {
+    // Benutzerdefinierte Eingabe für max_cell und time_step
+    int max_cell;
+    double time_step;
+
+    cout << "Geben Sie die maximale Anzahl der Zellen (max_cell) ein: ";
+    cin >> max_cell;
+
+    cout << "Geben Sie den Zeitschritt (time_step) ein: ";
+    cin >> time_step;
+
+    fs::path settings_file_path = "C:\\Users\\nasch\\Desktop\\Numerik_Praktikum\\Simulation_Umstroemung_eines_Wuerfels\\settings1.txt";
     unordered_map<string, string> settings = displaySettings(settings_file_path);
-    for (double i = 0.2; i <= 0.2 ; i = i +0.2){
+
+    for (double current_time = 0.2; current_time <= time_step; current_time += 0.2){
+       cout << "Verarbeite Zeitschritt: " << current_time << endl;
+       
+       
         // Pfade und Dateinamen aus der Settings-Datei verwenden
     string folder_CundU = settings["\"folder_path_CundU\""];
     string c = "\\C";
     string u = "\\U";
     
     ostringstream oss_cundu;
-    oss_cundu << folder_CundU << i ;
+    oss_cundu << folder_CundU << current_time;
     string folder_path_CundU = oss_cundu.str();
     ostringstream oss_c;
-    oss_c << folder_CundU << i << c;
+    oss_c << folder_CundU << current_time << c;
     string C_file_name = oss_c.str();
     ostringstream oss_u;
-    oss_u << folder_CundU << i << u;
+    oss_u << folder_CundU << current_time << u;
     string U_file_name = oss_u.str();
 
     //liest und speichert die eingelesenen Daten in vector anhand des filepath ueber die Funktionen ; speichert diese Automatisch in der struct.
@@ -248,8 +289,9 @@ int main() {
         point_index[make_key(C[i][0], C[i][1], C[i][2])] = i;
     }
 
-    // vector fuer die berechneten Gradienten
-    vector<vector<vector<double>>> results;
+    // Vektoren für Gradienten und Q-Werte zurücksetzen
+    vector<vector<vector<double>>> results; // Gradienten
+    
 
     for (int i = 0; i < C.size(); ++i) { // matrix nimmt die Daten von Funktion Abl; matrix := Jacobbi-Matrix; matrix
         vector<vector<double>> matrix(3, vector<double>(3, 0.0));//jede Zeile von matrix verpackt die partiellen Ableitungen
@@ -258,11 +300,25 @@ int main() {
         matrix[2] = Abl(C, U, point_index, i, stod(settings["matrix2_dx"]), stod(settings["matrix2_dy"]), stod(settings["matrix2_dz"]),settings); // z Richtung
         results.push_back(matrix); //speichert die Werte von matrix ins results
     }
-    fs::path output_file_path = create_file(".\\Simulation_Umstroemung_eines_Wuerfels",folder_path_CundU, "grad(U)");
-    fs::path Q_file_path = create_file(".\\Simulation_Umstroemung_eines_Wuerfels",folder_path_CundU, "Q");
+    
+
+     
+
+    fs::path output_file_path = create_file("C:\\Users\\nasch\\Desktop\\Numerik_Praktikum\\Simulation_Umstroemung_eines_Wuerfels",folder_path_CundU, "grad(U)");
+    fs::path Q_file_path = create_file("C:\\Users\\nasch\\Desktop\\Numerik_Praktikum\\Simulation_Umstroemung_eines_Wuerfels",folder_path_CundU, "Q");
     einschreiben_von_gradienten(results, output_file_path,settings);
     vector<double> Q = Q_Kriterium(results); // kommt auch in die settings-Datei
     einschreiben_von_Q(Q, Q_file_path,settings); //alle funktionen kommen in settings-Datei
+    
+    bool dev_mode = (settings["developer_mode"] == "true"); // Developer-Modus standardmäßig aktivieren
+        if (dev_mode) {
+            cout << "Developer-Modus ist aktiv." << endl; // Hinweis, dass der Modus aktiv ist
+            developer_mode(C, results, Q, time_step, max_cell); // Developer-Ausgabe
+        } else {
+            cout << "Developer-Modus ist deaktiviert." << endl; // Hinweis, dass der Modus nicht aktiv ist
+        }
+
+    
     }
     return 0;
 }
